@@ -1,0 +1,12 @@
+{
+  "name": "rebyt",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "relayer": "node scripts/rebyt-relayer.mjs"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "viem": "^2.21.56"
+  }
+}
