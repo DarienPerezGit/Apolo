@@ -5,3 +5,16 @@ cache/
 out/
 __pycache__/
 *.pyc
+
+# Temporary QA / forensic scripts
+scripts/_tmp_*.mjs
+scripts/qa-*.mjs
+
+# Local run logs
+scripts/*.out.log
+scripts/*.err.log
+
+# Generated zk artifacts (local-only)
+circuits/*.ptau
+circuits/*.zkey
+call-zk-output.txt

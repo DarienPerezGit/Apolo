@@ -14,11 +14,16 @@ Escrow releases automatically. No wallet interaction required.
 No gas. No wallet interaction. No friction."
 
 ## [01:00 - 02:30] Live demo
-Show each step in real time on demo frontend:
-- Step 1: User signs intent -> show EIP-712 signature in console
-- Step 2: Escrow funded -> show BscScan transaction link
-- Step 3: GenLayer validating -> show GenLayer explorer pending
-- Step 4: Funds released -> show BscScan final confirmation
+Show each step in real time using Plan B (recommended hackathon flow):
+- Step 1: User signs intent in frontend -> show EIP-712 signature
+- Step 2: Solver funds escrow on BSC -> show BscScan tx link
+- Step 3: Run GenLayer validation in Studio UI (Full Consensus) -> show 4/4 validators Agree + ACCEPTED
+- Step 4: Execute settlement on BSC with relayer manual mode:
+	- `node scripts/rebyt-relayer.mjs <intentHash> approved` (release)
+	- or `node scripts/rebyt-relayer.mjs <intentHash> rejected` (refund)
+	Show final BscScan confirmation.
+
+Note for judges: GenLayer consensus is demonstrated in Studio UI, and settlement execution is verifiable onchain on BSC Testnet.
 
 ## [02:30 - 03:00] Roadmap + sponsors
 "Built on BNB Chain — with EIP-7702 upgrade path ready on BNB Pascal.

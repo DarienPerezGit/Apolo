@@ -28,6 +28,8 @@ const BSC_TESTNET_RPC = process.env.BSC_TESTNET_RPC;
 const GENLAYER_RPC = process.env.GENLAYER_RPC || 'https://zksync-os-testnet-genlayer.zksync.dev';
 const GENLAYER_CHAIN_ID = Number(process.env.GENLAYER_CHAIN_ID || 4221);
 const DEFAULT_EVIDENCE_URL = process.env.GENLAYER_EVIDENCE_URL ?? '';
+const MANUAL_VALIDATION_RESULT = process.env.MANUAL_VALIDATION_RESULT ?? '';
+const MANUAL_VALIDATION_TX_HASH = process.env.MANUAL_VALIDATION_TX_HASH ?? '';
 
 const escrowAbi = parseAbi([
   'function release(bytes32 intentHash) external',
@@ -66,6 +68,17 @@ function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+function parseManualValidationResult(value) {
+  if (typeof value !== 'string') return null;
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return null;
+  if (['true', 'yes', 'approved', 'approve', 'release', '1'].includes(normalized)) return true;
+  if (['false', 'no', 'rejected', 'reject', 'refund', '0'].includes(normalized)) return false;
+  throw new Error(
+    `Invalid MANUAL_VALIDATION_RESULT: ${value}. Use one of: approved|rejected|true|false|release|refund`
+  );
 }
 
 async function getGenLayerValidation(intentHash, condition = '') {
@@ -164,7 +177,12 @@ async function triggerGenLayerValidation(intentHash, condition, evidenceUrl) {
 }
 
 export async function settleIntent(intentHash, validationContext = {}) {
-  const { condition = '', evidenceUrl = DEFAULT_EVIDENCE_URL } = validationContext;
+  const {
+    condition = '',
+    evidenceUrl = DEFAULT_EVIDENCE_URL,
+    manualResult = parseManualValidationResult(MANUAL_VALIDATION_RESULT),
+    manualValidateTxHash = MANUAL_VALIDATION_TX_HASH
+  } = validationContext;
 
   const intent = await publicClient.readContract({
     address: ESCROW_CONTRACT_ADDRESS,
@@ -186,11 +204,24 @@ export async function settleIntent(intentHash, validationContext = {}) {
     };
   }
 
-  const validateTxHash = await triggerGenLayerValidation(intentHash, condition, evidenceUrl);
+  let validateTxHash = '';
+  let result;
 
-  logStep('Polling validation result', { intentHash, condition, evidenceUrl, validateTxHash });
-  const result = await getGenLayerValidation(intentHash, condition);
-  logStep('Validation result fetched', { intentHash, condition, evidenceUrl, result });
+  if (typeof manualResult === 'boolean') {
+    result = manualResult;
+    validateTxHash = manualValidateTxHash || '';
+    logStep('Using manual validation result (Plan B)', {
+      intentHash,
+      result,
+      validateTxHash,
+      source: 'studio-ui-consensus'
+    });
+  } else {
+    validateTxHash = await triggerGenLayerValidation(intentHash, condition, evidenceUrl);
+    logStep('Polling validation result', { intentHash, condition, evidenceUrl, validateTxHash });
+    result = await getGenLayerValidation(intentHash, condition);
+    logStep('Validation result fetched', { intentHash, condition, evidenceUrl, result });
+  }
 
   if (state === 1) {
     await walletClient.writeContract({
@@ -237,12 +268,15 @@ export async function settleIntent(intentHash, validationContext = {}) {
 
 if (process.argv[1] && process.argv[1].includes('rebyt-relayer.mjs')) {
   const intentHash = process.argv[2];
+  const cliDecision = process.argv[3];
 
   if (!intentHash) {
-    throw new Error('Usage: node scripts/rebyt-relayer.mjs <intentHash>');
+    throw new Error('Usage: node scripts/rebyt-relayer.mjs <intentHash> [approved|rejected]');
   }
 
-  settleIntent(intentHash)
+  const manualResultFromCli = cliDecision ? parseManualValidationResult(cliDecision) : null;
+
+  settleIntent(intentHash, { manualResult: manualResultFromCli })
     .then((output) => {
       logStep('Relayer completed', output);
     })
