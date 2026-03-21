@@ -1,17 +1,14 @@
 import 'dotenv/config';
-import { execFile } from 'node:child_process';
-import { promisify } from 'node:util';
+import { createClient as createGenLayerClient } from 'genlayer-js';
+import { testnetBradbury } from 'genlayer-js/chains';
 import { createPublicClient, createWalletClient, http, parseAbi } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { bscTestnet } from 'viem/chains';
 
-const execFileAsync = promisify(execFile);
-
 const requiredEnv = [
   'ESCROW_CONTRACT_ADDRESS',
   'GENLAYER_CONTRACT_ADDRESS',
-  'BSC_TESTNET_RPC',
-  'GENLAYER_RPC'
+  'BSC_TESTNET_RPC'
 ];
 
 for (const key of requiredEnv) {
@@ -24,8 +21,6 @@ const privateKey = process.env.PRIVATE_KEY || process.env.SOLVER_PRIVATE_KEY;
 if (!privateKey) {
   throw new Error('Missing env var: PRIVATE_KEY (or SOLVER_PRIVATE_KEY fallback)');
 }
-
-const genlayerCli = process.env.GENLAYER_CLI || 'genlayer';
 
 const escrowAbi = parseAbi([
   'function release(bytes32 intentHash) external',
@@ -47,35 +42,34 @@ const publicClient = createPublicClient({
   transport: http(process.env.BSC_TESTNET_RPC)
 });
 
+const genlayerClient = createGenLayerClient({
+  chain: testnetBradbury,
+  endpoint: process.env.GENLAYER_RPC
+});
+
 function logStep(message, payload = {}) {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] ${message}`, payload);
 }
 
 async function getGenLayerValidation(intentHash) {
-  const args = [
-    'call',
-    process.env.GENLAYER_CONTRACT_ADDRESS,
-    'getResult',
-    '--rpc',
-    process.env.GENLAYER_RPC,
-    '--args',
-    intentHash
-  ];
-
   try {
-    const { stdout, stderr } = await execFileAsync('cmd.exe', ['/c', genlayerCli, ...args], {
-      windowsHide: true
+    const rawResult = await genlayerClient.readContract({
+      address: process.env.GENLAYER_CONTRACT_ADDRESS,
+      functionName: 'getResult',
+      args: [intentHash]
     });
-    const output = `${stdout}\n${stderr}`.toUpperCase();
+    if (typeof rawResult === 'boolean') {
+      return rawResult;
+    }
 
-    const trueMatch = output.match(/\bRESULT\b[\s\S]{0,120}\bTRUE\b/);
-    const falseMatch = output.match(/\bRESULT\b[\s\S]{0,120}\bFALSE\b/);
+    if (typeof rawResult === 'string') {
+      const normalized = rawResult.trim().toLowerCase();
+      if (normalized === 'true') return true;
+      if (normalized === 'false') return false;
+    }
 
-    if (trueMatch) return true;
-    if (falseMatch) return false;
-
-    throw new Error(`Unable to parse getResult output: ${output.slice(0, 300)}`);
+    throw new Error(`Unexpected getResult response type: ${JSON.stringify(rawResult)}`);
   } catch (error) {
     if (process.env.RELAYER_VALIDATION_RESULT_FALLBACK) {
       const fallback = process.env.RELAYER_VALIDATION_RESULT_FALLBACK.toLowerCase() === 'true';

@@ -7,6 +7,7 @@
   },
   "dependencies": {
     "dotenv": "^16.4.5",
+    "genlayer-js": "^0.23.0",
     "viem": "^2.21.56"
   }
 }
