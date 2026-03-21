@@ -24,10 +24,12 @@ if (!privateKey) {
 
 const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT_ADDRESS;
 const GENLAYER_CONTRACT_ADDRESS = process.env.GENLAYER_CONTRACT_ADDRESS;
+const GENLAYER_ANCHOR_CONTRACT_ADDRESS = process.env.GENLAYER_ANCHOR_CONTRACT_ADDRESS || GENLAYER_CONTRACT_ADDRESS;
 const BSC_TESTNET_RPC = process.env.BSC_TESTNET_RPC;
 const DEFAULT_EVIDENCE_URL = process.env.GENLAYER_EVIDENCE_URL ?? '';
 const MANUAL_VALIDATION_RESULT = process.env.MANUAL_VALIDATION_RESULT ?? '';
 const MANUAL_VALIDATION_TX_HASH = process.env.MANUAL_VALIDATION_TX_HASH ?? '';
+const ENABLE_GENLAYER_ANCHORING = (process.env.ENABLE_GENLAYER_ANCHORING ?? 'true').toLowerCase() !== 'false';
 
 const escrowAbi = parseAbi([
   'function release(bytes32 intentHash) external',
@@ -63,6 +65,10 @@ function sleep(ms) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+function unixTimestamp() {
+  return Math.floor(Date.now() / 1000);
 }
 
 function parseManualValidationResult(value) {
@@ -171,6 +177,56 @@ async function triggerGenLayerValidation(intentHash, condition, evidenceUrl) {
   return validateTxHash;
 }
 
+async function anchorConsensusOnGenLayer({ intentHash, approved, validateTxHash }) {
+  if (!ENABLE_GENLAYER_ANCHORING) {
+    return '';
+  }
+
+  const anchorTxHash = await genlayerClient.writeContract({
+    address: GENLAYER_ANCHOR_CONTRACT_ADDRESS,
+    functionName: 'recordConsensus',
+    args: [
+      intentHash,
+      approved,
+      'ACCEPTED',
+      'PENDING',
+      validateTxHash || '',
+      BigInt(unixTimestamp())
+    ]
+  });
+
+  logStep('GenLayer consensus anchored', {
+    intentHash,
+    approved,
+    anchorTxHash,
+    contract: GENLAYER_ANCHOR_CONTRACT_ADDRESS,
+    genExplorerUrl: `https://explorer-bradbury.genlayer.com/transactions/${anchorTxHash}`
+  });
+
+  return anchorTxHash;
+}
+
+async function anchorFinalityOnGenLayer({ intentHash }) {
+  if (!ENABLE_GENLAYER_ANCHORING) {
+    return '';
+  }
+
+  const finalityTxHash = await genlayerClient.writeContract({
+    address: GENLAYER_ANCHOR_CONTRACT_ADDRESS,
+    functionName: 'recordFinality',
+    args: [intentHash, 'CONFIRMED', BigInt(unixTimestamp())]
+  });
+
+  logStep('GenLayer finality confirmed', {
+    intentHash,
+    finalityTxHash,
+    contract: GENLAYER_ANCHOR_CONTRACT_ADDRESS,
+    genExplorerUrl: `https://explorer-bradbury.genlayer.com/transactions/${finalityTxHash}`
+  });
+
+  return finalityTxHash;
+}
+
 export async function settleIntent(intentHash, validationContext = {}) {
   const {
     condition = '',
@@ -200,6 +256,8 @@ export async function settleIntent(intentHash, validationContext = {}) {
   }
 
   let validateTxHash = '';
+  let anchorConsensusTxHash = '';
+  let anchorFinalityTxHash = '';
   let result;
 
   if (typeof manualResult === 'boolean') {
@@ -216,6 +274,28 @@ export async function settleIntent(intentHash, validationContext = {}) {
     logStep('Polling validation result', { intentHash, condition, evidenceUrl, validateTxHash });
     result = await getGenLayerValidation(intentHash, condition);
     logStep('Validation result fetched', { intentHash, condition, evidenceUrl, result });
+  }
+
+  try {
+    anchorConsensusTxHash = await anchorConsensusOnGenLayer({
+      intentHash,
+      approved: result,
+      validateTxHash
+    });
+  } catch (error) {
+    logStep('GenLayer consensus anchoring skipped (non-blocking)', {
+      intentHash,
+      error: error.message
+    });
+  }
+
+  try {
+    anchorFinalityTxHash = await anchorFinalityOnGenLayer({ intentHash });
+  } catch (error) {
+    logStep('GenLayer finality anchoring skipped (non-blocking)', {
+      intentHash,
+      error: error.message
+    });
   }
 
   if (state === 1) {
@@ -254,6 +334,8 @@ export async function settleIntent(intentHash, validationContext = {}) {
   return {
     intentHash,
     validateTxHash,
+    anchorConsensusTxHash,
+    anchorFinalityTxHash,
     result,
     action: functionName,
     txHash,

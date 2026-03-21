@@ -197,6 +197,15 @@ npm run solver
 
 All validators reached consensus with status **ACCEPTED / MAJORITY_AGREE**.
 
+GenLayer onchain anchoring is now integrated:
+- `recordConsensus(intentHash, approved, ACCEPTED, PENDING, validationRef, observedAt)`
+- `recordFinality(intentHash, CONFIRMED, finalizedAt)`
+
+This creates explicit onchain evidence on GenLayer for:
+- consensus phase
+- finality phase
+- timestamps and validation references
+
 ---
 
 ## Deployed Contracts
@@ -205,7 +214,12 @@ All validators reached consensus with status **ACCEPTED / MAJORITY_AGREE**.
 |----------|---------|---------|
 | **RebytEscrow.sol** | `0x5191Bca416e2De8dD7915bdD55bf625143ABB98C` | BSC Testnet |
 | **Groth16Verifier** | `0x5cBC63B27AF1427096C644DdC66B56cf01006A1e` | BSC Testnet |
-| **DeliveryValidator.py** | `0xc84ef0aEC4A8b4e5241231296C4a201cb56380C6` | GenLayer Bradbury |
+| **DeliveryValidator.py** | `0x619d0b8f1b6C0F09118314c73Cbc45552D38E6BB` | GenLayer Bradbury |
+
+GenExplorer links:
+- Contract: https://explorer-bradbury.genlayer.com/address/0x619d0b8f1b6C0F09118314c73Cbc45552D38E6BB
+- Deploy tx: https://explorer-bradbury.genlayer.com/transactions/0xdc93fec50236e0e41a20b75779dbb73ff60cc17ca37dd69358d173c5b4156c9c
+- Validators: https://explorer-bradbury.genlayer.com/validators
 
 ---
 

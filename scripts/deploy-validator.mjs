@@ -1,11 +1,12 @@
 /**
  * deploy-validator.mjs
  *
- * Deploys DeliveryValidator.py to GenLayer StudioNet.
+ * Deploys a GenLayer validator contract (default: DeliveryValidator.py) to StudioNet.
  * Prints the new contract address and optionally writes it to .env.
  *
  * Usage:
  *   node scripts/deploy-validator.mjs
+ *   GENLAYER_CONTRACT_FILE=DeliveryValidator.py node scripts/deploy-validator.mjs
  *
  * Reads: GENLAYER_RPC, SOLVER_PRIVATE_KEY from .env
  * Writes: GENLAYER_CONTRACT_ADDRESS to .env if deployment succeeds
@@ -16,7 +17,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createAccount, createClient } from 'genlayer-js';
-import { testnetBradbury } from 'genlayer-js/chains';
+import { studionet } from 'genlayer-js/chains';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -24,15 +25,16 @@ const ROOT = path.resolve(__dirname, '..');
 // ── Config ──────────────────────────────────────────────────────────────────
 const GENLAYER_RPC = process.env.GENLAYER_RPC || 'https://studio.genlayer.com/api';
 const privateKey = process.env.SOLVER_PRIVATE_KEY || process.env.PRIVATE_KEY;
+const GENLAYER_CONTRACT_FILE = process.env.GENLAYER_CONTRACT_FILE || 'DeliveryValidator.py';
 
 if (!privateKey) {
   console.error('Missing SOLVER_PRIVATE_KEY in .env');
   process.exit(1);
 }
 
-const contractPath = path.join(ROOT, 'genlayer', 'DeliveryValidator.py');
+const contractPath = path.join(ROOT, 'genlayer', GENLAYER_CONTRACT_FILE);
 if (!fs.existsSync(contractPath)) {
-  console.error('DeliveryValidator.py not found at', contractPath);
+  console.error(`${GENLAYER_CONTRACT_FILE} not found at`, contractPath);
   process.exit(1);
 }
 
@@ -46,9 +48,7 @@ log(`Connecting to GenLayer StudioNet at ${GENLAYER_RPC}`);
 log(`Deploying as: ${createAccount(privateKey).address}`);
 
 const client = createClient({
-  chain: { ...testnetBradbury, isStudio: true },
-  rpcUrl: GENLAYER_RPC,
-  endpoint: GENLAYER_RPC,
+  chain: studionet,
   account: createAccount(privateKey),
 });
 
@@ -111,9 +111,13 @@ async function main() {
   // Try multiple fields where GenLayer SDK may put the contract address
   const contractAddress =
     receipt.to ||
+    receipt.to_address ||
     receipt.data?.to ||
+    receipt.data?.to_address ||
     receipt.contractAddress ||
-    receipt.data?.contractAddress;
+    receipt.contract_address ||
+    receipt.data?.contractAddress ||
+    receipt.data?.contract_address;
 
   if (!contractAddress || contractAddress === '0x0000000000000000000000000000000000000000') {
     console.error('Could not extract contract address from receipt. Full receipt:');
@@ -122,7 +126,7 @@ async function main() {
     process.exit(1);
   }
 
-  log(`\n✅ DeliveryValidator deployed!`);
+  log(`\n✅ ${GENLAYER_CONTRACT_FILE} deployed!`);
   log(`   Contract address: ${contractAddress}`);
   log(`   TX hash:          ${txHash}`);
 

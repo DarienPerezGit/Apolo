@@ -23,6 +23,12 @@ class DeliveryValidator(gl.Contract):
     """
 
     results: TreeMap[str, bool]
+    recordsSeen: TreeMap[str, bool]
+    consensusStatus: TreeMap[str, str]
+    finalityStatus: TreeMap[str, str]
+    observedAt: TreeMap[str, bigint]
+    finalizedAt: TreeMap[str, bigint]
+    validationRef: TreeMap[str, str]
 
     def __init__(self):
         pass
@@ -68,6 +74,18 @@ class DeliveryValidator(gl.Contract):
         )
         return str(result).strip().upper()
 
+    def _normalize_consensus_status(self, value: str) -> str:
+        normalized = str(value).strip().upper()
+        if normalized in ("ACCEPTED", "MAJORITY_AGREE", "PENDING"):
+            return normalized
+        return "ACCEPTED"
+
+    def _normalize_finality_status(self, value: str) -> str:
+        normalized = str(value).strip().upper()
+        if normalized in ("PENDING", "CONFIRMED", "FINALIZED"):
+            return normalized
+        return "PENDING"
+
     # ── Public Interface ────────────────────────────────────────────────────
 
     @gl.public.write
@@ -89,9 +107,71 @@ class DeliveryValidator(gl.Contract):
         raw_result = self._evaluate(condition, evidenceUrl)
         approved = raw_result == "YES"
         self.results[intentHash] = approved
+        self.recordsSeen[intentHash] = True
+        self.consensusStatus[intentHash] = "ACCEPTED"
+        self.finalityStatus[intentHash] = "PENDING"
+        self.observedAt[intentHash] = bigint(0)
+        self.finalizedAt[intentHash] = bigint(0)
+        self.validationRef[intentHash] = ""
         return approved
+
+    @gl.public.write
+    def recordConsensus(
+        self,
+        intentHash: str,
+        approved: bool,
+        consensusStatus: str,
+        finalityStatus: str,
+        validationRef: str,
+        observedAt: bigint,
+    ) -> bool:
+        """
+        V1 trusted-solver anchoring endpoint.
+
+        Stores explicit onchain evidence for consensus phase after validation.
+        Called by relayer with deterministic values.
+        """
+        self.results[intentHash] = bool(approved)
+        self.recordsSeen[intentHash] = True
+        self.consensusStatus[intentHash] = self._normalize_consensus_status(consensusStatus)
+        self.finalityStatus[intentHash] = self._normalize_finality_status(finalityStatus)
+        self.validationRef[intentHash] = str(validationRef)
+        self.observedAt[intentHash] = bigint(observedAt)
+        if self.finalizedAt.get(intentHash, bigint(0)) < bigint(0):
+            self.finalizedAt[intentHash] = bigint(0)
+        return True
+
+    @gl.public.write
+    def recordFinality(self, intentHash: str, finalityStatus: str, finalizedAt: bigint) -> str:
+        """
+        V1 trusted-solver anchoring endpoint.
+
+        Marks finality phase onchain (PENDING/CONFIRMED/FINALIZED).
+        """
+        normalized = self._normalize_finality_status(finalityStatus)
+        self.recordsSeen[intentHash] = True
+        self.finalityStatus[intentHash] = normalized
+        if normalized in ("CONFIRMED", "FINALIZED"):
+            self.finalizedAt[intentHash] = bigint(finalizedAt)
+        return normalized
 
     @gl.public.view
     def getResult(self, intentHash: str) -> bool:
         """Read stored validation result. Returns False if not yet validated."""
         return self.results.get(intentHash, False)
+
+    @gl.public.view
+    def getRecord(self, intentHash: str) -> tuple[bool, bool, str, str, bigint, bigint, str]:
+        """
+        Returns:
+          (exists, approved, consensus_status, finality_status, observed_at, finalized_at, validation_ref)
+        """
+        return (
+            self.recordsSeen.get(intentHash, False),
+            self.results.get(intentHash, False),
+            self.consensusStatus.get(intentHash, "PENDING"),
+            self.finalityStatus.get(intentHash, "PENDING"),
+            self.observedAt.get(intentHash, bigint(0)),
+            self.finalizedAt.get(intentHash, bigint(0)),
+            self.validationRef.get(intentHash, ""),
+        )

@@ -21,6 +21,7 @@ const escrowAbi = parseAbi([
 
 const intentStateLabels = ['PENDING', 'FUNDED', 'VALIDATING', 'RELEASED', 'REFUNDED'];
 const intentRuntime = new Map();
+const GENLAYER_EXPLORER_BASE_URL = process.env.GENLAYER_EXPLORER_BASE_URL || 'https://explorer-bradbury.genlayer.com';
 
 function normalizeIntentHash(intentHash) {
   if (!intentHash || typeof intentHash !== 'string') return '';
@@ -127,6 +128,8 @@ app.post('/intent', async (req, res) => {
           ...intentRuntime.get(normalizedIntentHash),
           status: settlement.action === 'release' ? 'RELEASED' : 'REFUNDED',
           settlementTxHash: settlement.txHash || '',
+          anchorConsensusTxHash: settlement.anchorConsensusTxHash || '',
+          anchorFinalityTxHash: settlement.anchorFinalityTxHash || '',
           updatedAt: Date.now(),
           error: ''
         });
@@ -161,6 +164,8 @@ app.get('/intent/:hash/status', async (req, res) => {
       status: 'UNKNOWN',
       escrowTxHash: '',
       settlementTxHash: '',
+      anchorConsensusTxHash: '',
+      anchorFinalityTxHash: '',
       error: ''
     };
 
@@ -173,12 +178,16 @@ app.get('/intent/:hash/status', async (req, res) => {
       stateCode: onchain.stateCode,
       escrowTxHash: runtime.escrowTxHash,
       settlementTxHash: runtime.settlementTxHash,
+      anchorConsensusTxHash: runtime.anchorConsensusTxHash,
+      anchorFinalityTxHash: runtime.anchorFinalityTxHash,
       error: runtime.error,
       links: {
         escrow: runtime.escrowTxHash ? `https://testnet.bscscan.com/tx/${runtime.escrowTxHash}` : '',
         settlement: runtime.settlementTxHash ? `https://testnet.bscscan.com/tx/${runtime.settlementTxHash}` : '',
+        genlayerConsensus: runtime.anchorConsensusTxHash ? `${GENLAYER_EXPLORER_BASE_URL}/transactions/${runtime.anchorConsensusTxHash}` : '',
+        genlayerFinality: runtime.anchorFinalityTxHash ? `${GENLAYER_EXPLORER_BASE_URL}/transactions/${runtime.anchorFinalityTxHash}` : '',
         genlayer: process.env.GENLAYER_CONTRACT_ADDRESS
-          ? `https://studio.genlayer.com/contract/${process.env.GENLAYER_CONTRACT_ADDRESS}`
+          ? `${GENLAYER_EXPLORER_BASE_URL}/address/${process.env.GENLAYER_CONTRACT_ADDRESS}`
           : ''
       }
     });
