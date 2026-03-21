@@ -1,8 +1,6 @@
 ﻿import { useEffect, useState } from 'react';
 import { parseEther } from 'viem';
-import { createWalletClient, custom } from 'viem';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
-import { bscTestnet } from 'viem/chains';
 import { signPaymentIntentWithSessionAccount } from './lib/intentSigner';
 
 const REBYT_SESSION_ROUTER_ADDRESS = '0xBca0f7A094A5398598A8415270711ae3Dd46A986';
@@ -147,8 +145,8 @@ export default function App() {
         return;
       }
       pushLog('requesting wallet access...');
-      const walletClient = createWalletClient({ chain: bscTestnet, transport: custom(window.ethereum) });
-      const [selected] = await walletClient.requestAddresses();
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const selected = accounts[0];
       const generatedPrivateKey = generatePrivateKey();
       const sessionAccount = privateKeyToAccount(generatedPrivateKey);
       setAccount(selected);
