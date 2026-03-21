@@ -2,17 +2,15 @@
   <img src="assets/rebyt_logo_isometric_solo.svg" alt="Rebyt Logo" width="200"/>
 </p>
 
-# Rebyt — Intent-Based Payment Infrastructure
+# Rebyt — Intent Payments Verified by ZK Proofs and AI Consensus
 
-> Typed intent flows with programmable wallet execution,
-> secured by zero-knowledge proofs and validated by
-> AI consensus via GenLayer.
+> Typed intent flows with programmable wallet execution, secured by zero-knowledge proofs and validated by AI consensus on GenLayer.
 
 ## The Problem
 
-On March 12, 2026, a trader lost $50 million in a single DeFi transaction. Not because the protocol failed — because execution had no validation layer.
+Crypto payments execute first and verify later — or never.
 
-Today, crypto payments require choosing a network, paying gas fees, and exposing your wallet. Almost the entire market still lives on Web2 — not because the technology isn't ready, but because nobody removed the friction.
+Rebyt changes that: every payment is backed by a zero-knowledge proof of intent correctness and validated by AI consensus before funds are released. Execution is no longer trusted — it is proven.
 
 ## The Solution
 
