@@ -1,109 +1,136 @@
-﻿<p align="center">
-  <img src="assets/rebyt_logo_isometric_solo.svg" alt="Rebyt Logo" width="200"/>
-</p>
+﻿# Rebyt — Intent Payments Verified by ZK Proofs and AI Consensus
 
-# Rebyt — Intent Payments Verified by ZK Proofs and AI Consensus
+This project demonstrates an intent-based payment flow on BNB Smart Chain with programmable settlement conditions.
 
-> Typed intent flows with programmable wallet execution, secured by zero-knowledge proofs and validated by AI consensus on GenLayer.
+Users sign a payment intent offchain.  
+Funds are locked in escrow onchain.  
+Settlement executes only after conditions are evaluated via GenLayer.
 
-## The Problem
+An optional ZK path verifies that the intent data matches the committed hash before funding.
 
-Crypto payments execute first and verify later — or never.
+---
 
-Rebyt changes that: every payment is backed by a zero-knowledge proof of intent correctness and validated by AI consensus before funds are released. Execution is no longer trusted — it is proven.
+## What this demo shows
 
-## The Solution
+- EIP-712 intent signing (offchain)
+- Escrow funding on BSC Testnet
+- Conditional validation using GenLayer (Bradbury)
+- Settlement execution (release / refund)
 
-Rebyt introduces a validation layer between intent and execution.
-Users sign what they want. AI validators evaluate delivery conditions.
-Escrow settles automatically. No single component can cheat.
-
-<p align="center">
-  <img src="assets/rebyt_full_architecture_sequence.svg" alt="Rebyt Architecture" width="100%"/>
-</p>
+---
 
 ## Architecture
 
-### Layer 1 — Intent (EIP-712)
-User signs a `PaymentIntent` using EIP-712 typed data via a session wallet. No direct transaction required. No MetaMask needed.
+Intent → Escrow → Validation → Settlement  
+    ↘ ZK verification (optional)
 
-### Layer 2 — ZK Proof (Circom + Groth16)
-Before the escrow accepts funds, the Solver generates a zero-knowledge proof that the intent data matches the hash:
+---
 
-```
-Poseidon(recipient, amount, nonce) == intentHash
-```
+## How it works
 
-The `Groth16Verifier` contract validates this proof onchain.
-The Solver cannot lie about what it is paying for.
+1. User signs a PaymentIntent using EIP-712 typed data  
+2. Solver submits a funding transaction to the escrow contract  
+3. (Optional) A ZK proof verifies that the intent data matches the committed hash  
+4. GenLayer validators evaluate the settlement condition  
+5. Escrow releases or refunds funds based on the result  
 
-### Layer 3 — Escrow (Solidity + BSC Testnet)
-`RebytEscrow.sol` locks funds linked to the `intentHash`.
-`fundWithZK()` requires a valid ZK proof before accepting deposit.
-State machine: `PENDING → FUNDED → VALIDATING → RELEASED | REFUNDED`
+---
 
-### Layer 4 — AI Validation (GenLayer Bradbury)
-`DeliveryValidator.py` is an Intelligent Contract deployed on GenLayer Bradbury testnet. It uses:
-- **Optimistic Democracy** consensus (5 validators, each running their own LLM)
-- **Equivalence Principle**: "Two outputs are equivalent if they both agree on whether delivery conditions were met"
+## Contracts
 
-### Layer 5 — Settlement (rebyt-relayer.mjs)
-The relayer reads the GenLayer result and calls `escrow.release()` or `escrow.refund()` on BSC Testnet.
-Every step is verifiable on BscScan and GenLayer Studio.
+- RebytEscrow.sol (ZK enabled):  
+  0x5191Bca416e2De8dD7915bdD55bf625143ABB98C  
+
+- Groth16Verifier:  
+  0x5cBC63B27AF1427096C644DdC66B56cf01006A1e  
+
+- DeliveryValidator (GenLayer Bradbury):  
+  0xc84ef0aEC4A8b4e5241231296C4a201cb56380C6  
+
+---
+
+## ZK Proof System
+
+The Solver generates a zero-knowledge proof that the intent data matches the committed hash before the escrow accepts funds.
+
+- Circuit: Poseidon(recipient, amount, nonce) == intentHash  
+- Proof system: Groth16  
+- Verified onchain via: RebytEscrow.fundWithZK()
+
+Example transaction (ZKProofVerified event):  
+https://testnet.bscscan.com/tx/0x1bce644f6ac296bbd5a75ffa0b783987d8648355bb4dd912d6cbe8970995ab3e
+
+---
+
+## Demo Flow
+
+Frontend: one-page demo interface
+
+Flow:
+- Sign intent (EIP-712)
+- Fund escrow (BSC Testnet)
+- Observe validation (GenLayer Bradbury)
+- Execute settlement (release / refund)
+
+All steps are observable via onchain transactions and explorer links.
+
+---
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Intent signing | EIP-712 (viem) |
-| Session wallet | EIP-7702 — upgrade path (BNB Chain Pascal) |
-| ZK circuit | Circom 2.2.3 + snarkjs |
-| Proof system | Groth16 / BN128 |
-| Smart contracts | Solidity ^0.8.20 + Foundry |
-| AI validation | GenLayer Python SDK (Intelligent Contract) |
-| Relayer bridge | Node.js ESM |
-| Frontend | React + Vite + Tailwind |
-| Settlement chain | BSC Testnet (Chain ID: 97) |
-| Validation chain | GenLayer Bradbury testnet |
+- EIP-712 (intent signing)
+- Solidity (escrow contract)
+- BNB Smart Chain (testnet)
+- GenLayer Bradbury (validation layer)
+- Circom 2.2.3 + snarkjs (ZK circuit)
+- Groth16 (proof system)
+- Node.js (relayer / scripts)
+- React (demo frontend)
 
-## Contract Addresses (BSC Testnet)
-
-| Contract | Address |
-|---|---|
-| RebytEscrow (ZK enabled) | `0x5191Bca416e2De8dD7915bdD55bf625143ABB98C` |
-| Groth16Verifier | `0x5cBC63B27AF1427096C644DdC66B56cf01006A1e` |
-
-## Contract Addresses (GenLayer Bradbury)
-
-| Contract | Address |
-|---|---|
-| DeliveryValidator.py | `0xc84ef0aEC4A8b4e5241231296C4a201cb56380C6` |
-
-## Key Transactions
-
-**ZKProofVerified event** (`fundWithZK`):
-https://testnet.bscscan.com/tx/0x1bce644f6ac296bbd5a75ffa0b783987d8648355bb4dd912d6cbe8970995ab3e
-
-**Settlement confirmed** (`release`):
-https://testnet.bscscan.com/tx/0x98f5ae6cc8ba95e139d5b5c4ce54822c7c4074f0ff75bacb7774d7645cfec453
+---
 
 ## Bradbury Bug Report
 
-During integration we documented 6 reproducible issues with GenLayer Bradbury `gen_call` reliability. Full report: [BRADBURY-BUG-REPORT.md](BRADBURY-BUG-REPORT.md)
+During integration with GenLayer Bradbury, we documented reproducible issues with `gen_call` reliability.
 
-Submitted as contribution to the Bradbury Special Track.
+Full report:  
+docs/BRADBURY-BUG-REPORT.md
+
+Submitted as part of the Bradbury Special Track.
+
+---
+
+## Tracks
+
+- GenLayer Track  
+  Intelligent contract using Optimistic Democracy and Equivalence Principle  
+
+- Bradbury Special Track  
+  Bug report with reproducible issues during validator integration  
+
+- PL Genesis  
+  Full payment lifecycle: intent → escrow → validation → settlement  
+
+- BNB Chain  
+  Deployed on BSC Testnet with ZK verification path  
+
+---
 
 ## Demo Video
 
 [fill Sunday morning]
 
-## Tracks
+---
 
-- **GenLayer**: Intelligent Contract with Optimistic Democracy + Equivalence Principle on Bradbury
-- **Bradbury Special Track**: 6 reproducible bug reports with proposed SDK improvements
-- **PL Genesis**: best overall project
-- **BNB Chain**: BSC Testnet deployment, EIP-7702 upgrade path on BNB Pascal
+## Notes
 
-## Hackathon
+- Escrow enforces fund custody onchain  
+- ZK proof ensures intent data integrity before funding  
+- Validation is externalized via GenLayer consensus  
+- System remains functional even if validation is asynchronous  
 
-Aleph Hackathon Buenos Aires — March 20–22, 2026
+---
+
+## License
+
+MIT
