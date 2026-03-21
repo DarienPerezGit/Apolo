@@ -52,37 +52,55 @@ function logStep(message, payload = {}) {
   console.log(`[${timestamp}] ${message}`, payload);
 }
 
+function sleep(ms) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 async function getGenLayerValidation(intentHash) {
-  try {
-    const rawResult = await genlayerClient.readContract({
-      address: process.env.GENLAYER_CONTRACT_ADDRESS,
-      functionName: 'getResult',
-      args: [intentHash]
-    });
-    if (typeof rawResult === 'boolean') {
-      return rawResult;
-    }
+  let lastError;
 
-    if (typeof rawResult === 'string') {
-      const normalized = rawResult.trim().toLowerCase();
-      if (normalized === 'true') return true;
-      if (normalized === 'false') return false;
-    }
+  for (let attempt = 1; attempt <= 3; attempt += 1) {
+    logStep(`getResult attempt ${attempt}/3...`);
 
-    throw new Error(`Unexpected getResult response type: ${JSON.stringify(rawResult)}`);
-  } catch (error) {
-    if (process.env.RELAYER_VALIDATION_RESULT_FALLBACK) {
-      const fallback = process.env.RELAYER_VALIDATION_RESULT_FALLBACK.toLowerCase() === 'true';
-      logStep('Using RELAYER_VALIDATION_RESULT_FALLBACK due to GenLayer read error', {
-        intentHash,
-        fallback,
-        reason: error.message
+    try {
+      const rawResult = await genlayerClient.readContract({
+        address: process.env.GENLAYER_CONTRACT_ADDRESS,
+        functionName: 'getResult',
+        args: [intentHash]
       });
-      return fallback;
-    }
 
-    throw new Error(`GenLayer getResult failed: ${error.message}`);
+      if (typeof rawResult === 'boolean') {
+        return rawResult;
+      }
+
+      if (typeof rawResult === 'string') {
+        const normalized = rawResult.trim().toLowerCase();
+        if (normalized === 'true') return true;
+        if (normalized === 'false') return false;
+      }
+
+      throw new Error(`Unexpected getResult response type: ${JSON.stringify(rawResult)}`);
+    } catch (error) {
+      lastError = error;
+      if (attempt < 3) {
+        await sleep(2000);
+      }
+    }
   }
+
+  if (process.env.RELAYER_VALIDATION_RESULT_FALLBACK) {
+    const fallback = process.env.RELAYER_VALIDATION_RESULT_FALLBACK.toLowerCase() === 'true';
+    logStep('Bradbury unreachable, using fallback', {
+      intentHash,
+      fallback,
+      reason: lastError?.message
+    });
+    return fallback;
+  }
+
+  throw new Error(`GenLayer getResult failed after 3 attempts: ${lastError?.message ?? 'unknown error'}`);
 }
 
 async function settleIntent(intentHash) {
