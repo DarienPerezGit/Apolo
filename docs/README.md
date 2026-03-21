@@ -1,6 +1,10 @@
 ﻿# Rebyt — Intent Payments Verified by ZK Proofs and AI Consensus DEMO
 
+![Rebyt Logo](assets/rebyt_logo_isometric_solo.svg)
+
 This project demonstrates an intent-based payment flow on BNB Smart Chain with programmable settlement conditions.
+
+![Rebyt Full Architecture Flow](assets/rebyt_full_architecture_sequence.svg)
 
 Users sign a payment intent offchain.  
 Funds are locked in escrow onchain.  
@@ -24,14 +28,6 @@ An optional ZK path verifies that the intent data matches the committed hash bef
 
 Intent → Escrow → Validation → Settlement  
     ↘ ZK verification
-
-Architecture logo:
-
-![Rebyt Logo](assets/rebyt_logo_isometric_solo.svg)
-
-Architecture flow:
-
-![Rebyt Full Architecture Flow](assets/rebyt_full_architecture_sequence.svg)
 
 ---
 
