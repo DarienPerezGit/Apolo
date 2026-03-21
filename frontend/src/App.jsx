@@ -22,6 +22,7 @@ const refundedEvent = parseAbiItem('event Refunded(bytes32 indexed intentHash, u
 const ESCROW_CONTRACT_ADDRESS = '0xc065d530eAb19955EedC11BD51920625100B3a6A';
 const GENLAYER_CONTRACT_ADDRESS = '0x023b48B9c8C4805c4c4dAB50247e78d4a082C46E';
 const BSC_RPC = 'https://data-seed-prebsc-1-s1.binance.org:8545';
+const SOLVER_URL = 'http://localhost:3001/intent';
 
 const initialPipeline = [
   { key: 'intent', name: 'Intent signed', network: 'offchain', status: 'idle', link: '' },
@@ -40,6 +41,12 @@ function nowLog(message) {
   return { message, timestamp: new Date().toLocaleTimeString() };
 }
 
+function randomNonce() {
+  const values = new Uint32Array(2);
+  window.crypto.getRandomValues(values);
+  return (BigInt(values[0]) << 32n) | BigInt(values[1]);
+}
+
 export default function App() {
   const [recipient, setRecipient] = useState('0xa2e036eD6f43baC9c67B6B098E8B006365b01464');
   const [amount, setAmount] = useState('0.0001');
@@ -50,6 +57,7 @@ export default function App() {
   const [pipeline, setPipeline] = useState(initialPipeline);
   const [logs, setLogs] = useState([]);
   const [account, setAccount] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const publicClient = useMemo(
     () =>
@@ -76,8 +84,11 @@ export default function App() {
 
   async function submitIntent(event) {
     event.preventDefault();
+    setIsSubmitting(true);
+
+    try {
     const deadline = Math.floor(Date.now() / 1000) + 3600;
-    const nonce = BigInt(Date.now());
+    const nonce = randomNonce();
     const parsedAmount = parseEther(amount || '0');
 
     const intent = {
@@ -113,29 +124,59 @@ export default function App() {
     );
     pushLog(`Intent signed: ${signed.intentHash}`);
 
-    const fundTx = await walletClient.writeContract({
-      address: ESCROW_CONTRACT_ADDRESS,
-      abi: escrowAbi,
-      functionName: 'fund',
-      args: [signed.intentHash, parsedAmount],
-      value: parsedAmount,
-      account: selected
+    setPipeline((prev) =>
+      prev.map((step) => {
+        if (step.key === 'escrow') {
+          return { ...step, status: 'processing', link: '' };
+        }
+        return step;
+      })
+    );
+    pushLog('Sending intent to solver...');
+
+    const solverResponse = await fetch(SOLVER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        intentHash: signed.intentHash,
+        signature: signed.signature,
+        signer: selected,
+        intent: {
+          recipient,
+          amountWei: parsedAmount.toString(),
+          condition,
+          deadline,
+          nonce: nonce.toString()
+        }
+      })
     });
 
-    setEscrowTx(fundTx);
+    if (!solverResponse.ok) {
+      const errorBody = await solverResponse.json().catch(() => ({}));
+      throw new Error(errorBody.error || `Solver HTTP ${solverResponse.status}`);
+    }
+
+    const solverResult = await solverResponse.json();
+    const fundTx = solverResult.txHash;
+    setEscrowTx(fundTx || '');
     setPipeline((prev) =>
       prev.map((step) => {
         if (step.key === 'escrow') {
           return {
             ...step,
-            status: 'processing',
-            link: ''
+            status: 'confirmed',
+            link: fundTx ? `https://testnet.bscscan.com/tx/${fundTx}` : ''
           };
         }
         return step;
       })
     );
     pushLog(`Escrow funded tx: ${fundTx}`);
+    } catch (error) {
+      pushLog(`Submit error: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   async function findSettlementTx(hash) {
@@ -207,7 +248,7 @@ export default function App() {
               };
             }
             if (step.key === 'validation') {
-              const status = state >= 3 ? 'confirmed' : state === 2 ? 'processing' : step.status;
+              const status = state === 3 ? 'confirmed' : state === 2 ? 'processing' : step.status;
               return {
                 ...step,
                 status,
@@ -215,7 +256,7 @@ export default function App() {
               };
             }
             if (step.key === 'settlement') {
-              const status = state === 3 || state === 4 ? 'confirmed' : step.status;
+              const status = state === 3 ? 'confirmed' : step.status;
               return {
                 ...step,
                 status,
@@ -272,7 +313,7 @@ export default function App() {
             />
           </div>
           <div className="flex gap-3">
-            <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 hover:bg-indigo-500">
+            <button type="submit" disabled={isSubmitting} className="rounded-lg bg-indigo-600 px-4 py-2 hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60">
               Sign Intent &amp; Pay
             </button>
           </div>

@@ -3,10 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "relayer": "node scripts/rebyt-relayer.mjs"
+    "relayer": "node scripts/rebyt-relayer.mjs",
+    "solver": "node scripts/solver-server.mjs"
   },
   "dependencies": {
     "dotenv": "^16.4.5",
+    "express": "^5.2.1",
     "genlayer-js": "^0.23.0",
     "viem": "^2.21.56"
   }
