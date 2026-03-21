@@ -21,6 +21,7 @@ const refundedEvent = parseAbiItem('event Refunded(bytes32 indexed intentHash, u
 
 const ESCROW_CONTRACT_ADDRESS = '0xc065d530eAb19955EedC11BD51920625100B3a6A';
 const GENLAYER_CONTRACT_ADDRESS = '0x023b48B9c8C4805c4c4dAB50247e78d4a082C46E';
+const REBYT_SESSION_ROUTER_ADDRESS = '0xBca0f7A094A5398598A8415270711ae3Dd46A986';
 const BSC_RPC = 'https://data-seed-prebsc-1-s1.binance.org:8545';
 
 const initialPipeline = [
@@ -50,6 +51,7 @@ export default function App() {
   const [pipeline, setPipeline] = useState(initialPipeline);
   const [logs, setLogs] = useState([]);
   const [account, setAccount] = useState('');
+  const [authorizationPreview, setAuthorizationPreview] = useState('');
 
   const publicClient = useMemo(
     () =>
@@ -72,6 +74,43 @@ export default function App() {
     setAccount(selected);
     pushLog(`Wallet connected: ${selected}`);
     return { walletClient, selected };
+  }
+
+  async function testEip7702Authorization() {
+    try {
+      const { walletClient, selected } = account
+        ? {
+            walletClient: createWalletClient({
+              account,
+              chain: bscTestnet,
+              transport: custom(window.ethereum)
+            }),
+            selected: account
+          }
+        : await connect();
+
+      if (typeof walletClient.signAuthorization !== 'function') {
+        throw new Error('signAuthorization not supported by this wallet/provider');
+      }
+
+      pushLog(`Testing signAuthorization for: ${selected}`);
+
+      const authorization = await walletClient.signAuthorization({
+        contractAddress: REBYT_SESSION_ROUTER_ADDRESS,
+        account: selected
+      });
+
+      const serialized = typeof authorization === 'string'
+        ? authorization
+        : JSON.stringify(authorization);
+
+      setAuthorizationPreview(serialized);
+      console.log('EIP-7702 authorization result:', authorization);
+      pushLog('signAuthorization success (see console + preview)');
+    } catch (error) {
+      console.error('EIP-7702 signAuthorization failed:', error);
+      pushLog(`signAuthorization error: ${error.message}`);
+    }
   }
 
   async function submitIntent(event) {
@@ -275,8 +314,23 @@ export default function App() {
             <button type="submit" className="rounded-lg bg-indigo-600 px-4 py-2 hover:bg-indigo-500">
               Sign Intent &amp; Pay
             </button>
+            <button
+              type="button"
+              onClick={testEip7702Authorization}
+              className="rounded-lg bg-emerald-700 px-4 py-2 hover:bg-emerald-600"
+            >
+              Test EIP-7702 Authorization
+            </button>
           </div>
         </form>
+
+        <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-4">
+          <h3 className="mb-2 text-lg font-semibold">EIP-7702 Authorization Test</h3>
+          <p className="text-xs text-slate-300 break-all">Router: {REBYT_SESSION_ROUTER_ADDRESS}</p>
+          <p className="mt-2 text-xs text-slate-300 break-all">
+            auth preview: {authorizationPreview || '-'}
+          </p>
+        </section>
 
         <section className="mb-8 rounded-2xl border border-slate-800 bg-slate-900 p-6">
           <div className="grid gap-4 md:grid-cols-4">
