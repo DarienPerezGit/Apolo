@@ -50,7 +50,13 @@ function PipelineTrace({ pipeline }) {
             </div>
             <div className="mt-2.5 px-1 w-full text-center">
               <p className={`text-xs font-semibold ${step.status === 'pending' ? 'text-amber-600' : 'text-[#111]'}`}>{step.name}</p>
-              <p className="text-[#999] mt-0.5 font-mono" style={{ fontSize: '10px' }}>{step.status === 'pending' ? '30 min in prod' : step.label}</p>
+              <p className="text-[#999] mt-0.5 font-mono" style={{ fontSize: '10px' }}>
+                {step.status === 'active' && step.key === 'validation'
+                  ? 'evaluating...'
+                  : step.status === 'pending'
+                  ? '30 min in prod'
+                  : step.label}
+              </p>
               {step.link && step.status === 'completed' && (
                 <a
                   href={step.link}
@@ -271,22 +277,26 @@ export default function DemoPanel() {
         }
         setPipeline((prev) =>
           prev.map((step) => {
+            const settled = data.status === 'RELEASED' || data.status === 'REFUNDED';
             if (step.key === 'escrow' && escrowTx) {
               return { ...step, status: 'completed', link: `https://testnet.bscscan.com/tx/${escrowTx}` };
             }
-            if (step.key === 'validation' && data.validateTxHash) {
-              return { ...step, status: 'completed', link: data.links?.genlayerValidation || '' };
+            if (step.key === 'validation') {
+              // advances on real validate tx OR consensus anchor (manual mode)
+              if (data.validateTxHash || data.anchorConsensusTxHash || settled) {
+                return { ...step, status: 'completed', link: data.links?.genlayerValidation || data.links?.genlayerConsensus || '' };
+              }
             }
             if (step.key === 'finality') {
-              if (data.anchorFinalityTxHash) {
+              if (data.anchorFinalityTxHash || settled) {
                 return { ...step, status: 'completed', link: data.links?.genlayerFinality || '' };
               }
-              if (data.validateTxHash) {
+              if (data.validateTxHash || data.anchorConsensusTxHash) {
                 return { ...step, status: 'pending' };
               }
             }
             if (step.key === 'settlement') {
-              if (data.status === 'RELEASED' || data.status === 'REFUNDED') {
+              if (settled) {
                 return {
                   ...step,
                   status: 'completed',
