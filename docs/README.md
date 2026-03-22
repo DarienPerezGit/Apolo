@@ -285,7 +285,7 @@ Full report: [BRADBURY-BUG-REPORT.md](BRADBURY-BUG-REPORT.md)
 
 ## Demo Video
 
-[Coming soon]
+[![Rebyt Demo](https://img.youtube.com/vi/Gt5c3X2K5D4/0.jpg)](https://www.youtube.com/watch?v=Gt5c3X2K5D4)
 
 ---
 
