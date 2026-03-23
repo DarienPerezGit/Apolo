@@ -96,15 +96,15 @@ export default function Landing() {
         <div className="relative z-10 flex-1 flex items-center px-8 md:px-16 lg:px-24">
           <div className="max-w-3xl">
             <p className="text-xs font-mono text-[#999] uppercase tracking-widest mb-6">
-              Consensus infrastructure
+              SLA-verified escrow
             </p>
 
             <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-extrabold tracking-[-0.035em] leading-[0.95] text-[#111] mb-7">
-              Truth is<br />programmable.
+              Deploy. Get paid<br />when it works.
             </h1>
 
             <p className="text-lg md:text-xl text-[#555] max-w-lg leading-relaxed mb-14">
-              Autonomous consensus for real-world execution.
+              SLA-verified escrow for developers. Ship your API, get paid automatically when it's live.
             </p>
 
             <div className="flex flex-wrap items-center gap-4">
