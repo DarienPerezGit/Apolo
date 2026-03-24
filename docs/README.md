@@ -1,32 +1,32 @@
 <!-- markdownlint-disable MD013 MD034 MD060 -->
 
-# Apolo: Automated API Bounties.
 
-**Automated SLA verification and instant payments for developers.**
+# Apolo: Automated API Bounties
 
-Apolo resuelve el problema de pagar por promesas convirtiendo APIs en contratos financieros.
+**Verify production before you pay.**
+
+Contratá a un dev, definí la condición de éxito de tu API, y Apolo paga automáticamente sólo si la entrega funciona en producción.
 
 ```text
-Client (Set Condition)
-        |
-        v
-BNB Chain (Lock)
-        |
-        v
-GenLayer (Verify)
-        |
-        v
-BNB Chain (Release)
+Client (Set Bounty)
+   |
+   v
+Escrow (Lock Funds)
+   |
+   v
+GenLayer Judge (Verify API)
+   |
+   v
+Payout (Release or Refund)
 ```
 
-Karpathy lo resume en una línea útil para mercado: AI agents son “smart glue” entre APIs. Apolo agrega lo que falta para producción: settlement verificable.
 
 ## What is Apolo?
 
-Un cliente define una condición de entrega (ej. “pagar cuando la API responda HTTP 200”).
-Apolo bloquea fondos en escrow, valida la condición en GenLayer y libera/reembolsa en BNB Chain según el resultado.
+Apolo es una herramienta de bounties para APIs: el cliente define una condición ("pagar cuando la API responda HTTP 200"), los fondos quedan bloqueados en escrow, y sólo se pagan si la API pasa la verificación automática en producción.
 
-**V1 trust model:** el Solver/Relayer es un componente offchain confiable que financia escrow, solicita validación y ejecuta settlement después del resultado observado.
+**V1 trust model:** El Solver/Relayer es un componente offchain confiable que financia el escrow, solicita validación y ejecuta el pago según el resultado observado.
+
 
 ## How it works
 
@@ -46,7 +46,7 @@ Apolo bloquea fondos en escrow, valida la condición en GenLayer y libera/reembo
 |---|---|---|
 | 1 | Client + Frontend | Firma de intent con condición SLA. |
 | 2 | Solver + Escrow | Fondos bloqueados en BSC Testnet. |
-| 3 | GenLayer Validator | Verificación del endpoint y decisión approve/reject. |
+| 3 | GenLayer Judge | Verificación automática del endpoint y decisión approve/reject. |
 | 4 | Relayer + Escrow | `release()` si cumple, `refund()` si no cumple. |
 
 ### Tech Stack
@@ -59,6 +59,7 @@ Apolo bloquea fondos en escrow, valida la condición en GenLayer y libera/reembo
 | Relayer | Node.js ESM | Puente entre resultado de validación y escrow. |
 | Frontend | React + Vite + Tailwind | Demo UI para jueces y operadores. |
 | Integrity | Circom + snarkjs + Groth16 | Prueba de integridad de intent (fundWithZK). |
+
 
 ## Setup (run it locally)
 
@@ -121,6 +122,7 @@ npm install
 npm run dev
 ```
 
+
 ## Real onchain transparency
 
 ### Deployed Contracts
@@ -145,6 +147,7 @@ npm run dev
 - Settlement release:
   https://testnet.bscscan.com/tx/0x98f5ae6cc8ba95e139d5b5c4ce54822c7c4074f0ff75bacb7774d7645cfec453
 
+
 ## Bradbury Bug Report
 
 Durante la integración documentamos 6 issues reproducibles sobre `gen_call` en Bradbury.
@@ -152,9 +155,11 @@ Durante la integración documentamos 6 issues reproducibles sobre `gen_call` en 
 - Reporte completo: `docs/BRADBURY-BUG-REPORT.md`
 - Estado: enviado para Bradbury Special Track
 
+
 ## Demo Video
 
 - Estado: pendiente de adjuntar enlace final de entrega
+
 
 ## Tracks
 
@@ -162,3 +167,7 @@ Durante la integración documentamos 6 issues reproducibles sobre `gen_call` en 
 - Bradbury Special Track: 6 reproducible bug reports
 - PL Genesis: best overall project
 - BNB Chain: BSC Testnet deployment, EIP-7702 roadmap
+
+---
+
+*"AI agents are the smart glue between APIs." — Karpathy*
