@@ -1,6 +1,6 @@
 # Apolo — Public Demo Flow
 
-Follow these exact steps to run a public demo of Apolo. The goal is to show a complete lifecycle: from the front-end SLA creation, to funds being locked in the BNB Chain escrow, to our Relayer node finally releasing the payment based on simulated AI validation.
+Follow these exact steps to run a public demo of Apolo. The goal is to show a complete lifecycle: from the front-end SLA creation, to funds being locked in the BNB Chain escrow, to our Relayer node finally releasing the payment based on off-chain validation.
 
 ## 1. Local Requirements Configuration
 1. Ensure all environment variables are properly set in the `.env` file (`PRIVATE_KEY`, `ESCROW_CONTRACT_ADDRESS`, `BSC_TESTNET_RPC`).
@@ -40,7 +40,7 @@ npm run dev
 3. Explicitly point out to judges: *"The funds are now cryptographically locked on BSC under our SLA intent."*
 
 ### C. Trigger Settlement (The Relayer)
-Normally, GenLayer validators handle the SLA checking process. For the sake of testnet stability and speed in this demo, Apolo V1 uses a Trusted Relayer to force simulation logic.
+Normally, an off-chain verifier network handles the SLA checking process. For the sake of testnet stability and speed in this demo, Apolo V1 uses a Trusted Relayer to execute the verification and trigger settlement.
 1. Copy the `intentHash` logged in the Solver Terminal.
 2. In a third terminal window, run the relayer in "manual approved" mode to execute settlement:
 ```bash

@@ -13,11 +13,10 @@
 ## 1:30 - 2:30 | How It Works & Demo Flow
 "Apolo is SLA-verified payment infrastructure built on the BNB Chain. 
 Here is how it works:
-1. The client defines a condition, for example, 'Pay when my API returns 200'.
-2. Funds are safely locked in an escrow smart contract on the BSC Testnet.
-3. The developer ships the code.
-4. GenLayer AI validators verify the endpoint independently and reach a consensus.
-5. Our Relayer node reads the consensus result and automatically triggers the release of the funds on BSC."
+1. Client locks funds in escrow (BSC Testnet)
+2. Off-chain verification checks the SLA condition (API uptime / response / evidence)
+3. Trusted relayer triggers settlement on-chain
+4. Funds are released or refunded automatically"
 
 "All signing is offchain and gasless for the client. A single wallet interaction is required for execution."
 

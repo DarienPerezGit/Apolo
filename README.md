@@ -6,14 +6,13 @@ Apolo is an automated bounty and escrow system for API and operational work veri
 
 ---
 
-🔥 **[Live Demo on Vercel]**(https://aleph-hackathon.vercel.app/)  
-*(Si el dominio de Vercel es diferente, por favor actualiza este link)*
+🔥 **[Live Demo on Vercel](https://project-apolo.vercel.app/)**  
 
-💼 **[ApoloEscrow Contract on BSCScan]**(https://testnet.bscscan.com/address/0x5191bca416e2de8dd7915bdd55bf625143abb98c)
+💼 **[ApoloEscrow Contract on BSCScan](https://testnet.bscscan.com/address/0x5191bca416e2de8dd7915bdd55bf625143abb98c)**
 
 ✅ **Real Transaction Proofs (BSC Testnet)**  
 - **Fund TX (Funds Locked):** [0x98f5ae6cc8ba...](https://testnet.bscscan.com/tx/0x98f5ae6cc8ba95e139d5b5c4ce54822c7c4074f0ff75bacb7774d7645cfec453)
-- **Release TX (Settlement/Release):** [0x386dea5bda30...](https://testnet.bscscan.com/tx/0x386dea5bda30cef5a651ef259af24a8bf358afb8cb2f2e9a7a3a6dc6cdd1b9bc)
+- **Release TX (Settlement):** [0x386dea5bda30...](https://testnet.bscscan.com/tx/0x386dea5bda30cef5a651ef259af24a8bf358afb8cb2f2e9a7a3a6dc6cdd1b9bc)
 - *Refund TX (Example): [0xdf72daa0...](https://testnet.bscscan.com/tx/0xdf72daa0b6c1d3a2d17cfbb02fbf8f72f3310f236e1fda8a9e4d4fd3f8ad0190)*
 
 ---
@@ -35,16 +34,17 @@ To see Apolo working locally:
 Apolo is a verifiable bank-account layer for the Agentic Economy. It allows developers and clients to create SLAs (Service Level Agreements) backed by real funds. The client locks up funds, an external validation process checks the SLA, and if successful, the funds are automatically released. 
 
 ## 🧠 How It Works
+
+![Apolo Architecture](docs/assets/Apolo%20SLA%20Escrow%20Flow.png)
+
 ```text
 1. Client locks funds in escrow (BSC Testnet)
       ↓
-2. Validators check the SLA condition independently (e.g. "API returns HTTP 200")
+2. Off-chain verification checks the SLA condition (API uptime / response / evidence)
       ↓
-3. Consensus is reached 
+3. Trusted relayer triggers settlement on-chain
       ↓
-4. Relayer Node triggers settlement based on the consensus
-      ↓
-5. Funds are automatically released to the developer (BSC Testnet)
+4. Funds are released or refunded automatically
 ```
 
 ## 🔒 Trust Model (V1)
