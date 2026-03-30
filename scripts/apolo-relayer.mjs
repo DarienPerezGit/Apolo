@@ -4,6 +4,7 @@ import { studionet } from 'genlayer-js/chains';
 import { createPublicClient, createWalletClient, http, parseAbi } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { bscTestnet } from 'viem/chains';
+import { trackMetric } from './metrics.mjs';
 
 const requiredEnv = [
   'ESCROW_CONTRACT_ADDRESS',
@@ -322,6 +323,12 @@ export async function settleIntent(intentHash, validationContext = {}) {
     txHash,
     bscScanUrl: `https://testnet.bscscan.com/tx/${txHash}`
   });
+
+  if (functionName === 'release') {
+    trackMetric('settled', intent[1].toString());
+  } else {
+    trackMetric('refunded', intent[1].toString());
+  }
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });
   logStep('SLA payment settlement confirmed', {

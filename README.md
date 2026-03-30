@@ -2,107 +2,64 @@
 
 > **Deploy. Get paid when it works.**
 
-Apolo is an AI-powered escrow protocol where payments are automatically released when verifiable conditions are met — without intermediaries. Built on BSC Testnet with AI validation via GenLayer.
+Apolo is an automated bounty and escrow system for API and operational work verification. It locks funds securely on the BNB Chain and automatically releases them when verifiable conditions are met. 
 
-## 🏆 BNB Chain Hackathon Track
+---
 
-**Track**: Next-Gen Consumer AI on BNB Chain  
-**Smart Contract (BSC Testnet)**: [`0x5191bca416e2de8dd7915bdd55bf625143abb98c`](https://testnet.bscscan.com/address/0x5191bca416e2de8dd7915bdd55bf625143abb98c)  
-**Deploy TX**: [`0xc31eec9927e06db8516751def8aa758b70abb7d3cb0a8bbba0ebbcb37a3c73e2`](https://testnet.bscscan.com/tx/0xc31eec9927e06db8516751def8aa758b70abb7d3cb0a8bbba0ebbcb37a3c73e2)
+🔥 **[Live Demo on Vercel]**(https://aleph-hackathon.vercel.app/)  
+*(Si el dominio de Vercel es diferente, por favor actualiza este link)*
+
+💼 **[ApoloEscrow Contract on BSCScan]**(https://testnet.bscscan.com/address/0x5191bca416e2de8dd7915bdd55bf625143abb98c)
+
+✅ **Real Transaction Proofs (BSC Testnet)**  
+- **Fund TX (Funds Locked):** [0x98f5ae6cc8ba...](https://testnet.bscscan.com/tx/0x98f5ae6cc8ba95e139d5b5c4ce54822c7c4074f0ff75bacb7774d7645cfec453)
+- **Release TX (Settlement/Release):** [0x386dea5bda30...](https://testnet.bscscan.com/tx/0x386dea5bda30cef5a651ef259af24a8bf358afb8cb2f2e9a7a3a6dc6cdd1b9bc)
+- *Refund TX (Example): [0xdf72daa0...](https://testnet.bscscan.com/tx/0xdf72daa0b6c1d3a2d17cfbb02fbf8f72f3310f236e1fda8a9e4d4fd3f8ad0190)*
+
+---
+
+## ⏱️ Quick Demo (2 min)
+
+To see Apolo working locally:
+1. `npm install && cd frontend && npm install`
+2. **Terminal 1:** Run `npm run solver`
+3. **Terminal 2:** Run `cd frontend && npm run dev`, open `http://localhost:5173`
+4. Fill intent details, click **Lock Funds**.
+5. Once BSC testnet locks the funds, simulate relayer settlement in **Terminal 3**:
+   `npm run relayer <INTENT_HASH> approved`
+6. Done! Watch the terminal output and BSCScan to see your funds automatically released.
+
+---
+
+## 🏆 What It Is
+Apolo is a verifiable bank-account layer for the Agentic Economy. It allows developers and clients to create SLAs (Service Level Agreements) backed by real funds. The client locks up funds, an external validation process checks the SLA, and if successful, the funds are automatically released. 
 
 ## 🧠 How It Works
-
-```
-Client locks funds in escrow (BSC)
+```text
+1. Client locks funds in escrow (BSC Testnet)
       ↓
-AI Validators check the SLA condition (GenLayer Bradbury)
+2. Validators check the SLA condition independently (e.g. "API returns HTTP 200")
       ↓
-Consensus reached → Solver triggers release
+3. Consensus is reached 
       ↓
-Funds released to provider on BSC
+4. Relayer Node triggers settlement based on the consensus
+      ↓
+5. Funds are automatically released to the developer (BSC Testnet)
 ```
 
-1. **Client** defines an SLA condition (e.g. _"API returns HTTP 200"_) and locks USDT in the escrow smart contract on BSC Testnet.
-2. **GenLayer AI Validators** independently fetch evidence from the provided URL and vote on whether the condition was met.
-3. **Consensus** is reached via GenLayer's Optimistic Democracy (AGREE/DISAGREE).
-4. **Solver** reads the consensus result and calls `releasePayment()` on the BSC escrow.
+## 🔒 Trust Model (V1)
+In V1, **Apolo uses a Trusted Relayer model**. 
+The relayer node is a critical component that acts as the bridge between off-chain consensus (or AI Validation) and on-chain execution. Instead of forcing heavy verification on-chain, the trusted relayer executes the outcome on the BSC Testnet. This enables an immediate, simple, and reliable MVP for verifying operational work.
 
-## 📦 Architecture
-
-```
-frontend/         → React demo UI
-contracts/
-  ApoloEscrow.sol → BSC Testnet escrow (Solidity + Foundry)
-genlayer/
-  SLAValidator.py → AI validator contract (GenLayer Bradbury)
-scripts/
-  solver.mjs      → Off-chain relayer connecting both networks
-```
-
-## 🚀 Running Locally
-
-### Prerequisites
-- Node.js 18+
-- Foundry (for contracts)
-- A `.env` file (copy from `.env.example`)
-
-### 1. Install dependencies
-```bash
-npm install
-cd frontend && npm install
-```
-
-### 2. Start the solver (relayer)
-```bash
-npm run solver
-```
-
-### 3. Start the frontend
-```bash
-cd frontend && npm run dev
-```
-
-Frontend runs at: `http://localhost:5173`
-
-### 4. Demo flow
-1. Open the frontend
-2. Fill in the SLA condition and evidence URL
-3. Click **Lock Funds** — signs EIP-712 intent and deposits on BSC
-4. The solver watches GenLayer for consensus
-5. On AGREE → funds released automatically
-
-## 🔗 Deployed Contracts
-
-| Contract | Network | Address |
-|---|---|---|
-| `ApoloEscrow` (RebytEscrow) | BSC Testnet (Chain 97) | `0x5191bca416e2de8dd7915bdd55bf625143abb98c` |
-| `SLAValidator` | GenLayer Bradbury | `0x66A6cFc5DAb62d3EB1681dEBa3Ea5B302D7c7aB2` |
-
-## 🔍 Onchain Proof (BSC Testnet)
-
-| TX | Action | Status |
-|---|---|---|
-| [`0xc31eec...`](https://testnet.bscscan.com/tx/0xc31eec9927e06db8516751def8aa758b70abb7d3cb0a8bbba0ebbcb37a3c73e2) | Contract Deploy | ✅ Success |
-| [`0x04692e...`](https://testnet.bscscan.com/tx/0x04692e3f6cdce01c3a3ff26273aa301c583d09887b19b62698540847654ba1ca) | setZKVerifier | ✅ Success |
-| [`0x32711e...`](https://testnet.bscscan.com/tx/0x32711e330341ed62db18e2a0c9ebef31d1a9700f71293e611139d224325e7f70) | setZKEnabled | ✅ Success |
-
-## 🤖 AI + Web3 Integration
-
-- **GenLayer** provides nondeterministic AI execution with economic consensus — validators independently call LLMs and vote. This is the "AI" in the BNB Track.
-- **BSC Testnet** is the settlement layer — all funds and releases are onchain.
-- **EIP-712** signing ensures the payment intent is cryptographically bound to the SLA condition.
-
-## 🛠️ Tech Stack
+## 🛠 Tech Stack
 
 | Layer | Tech |
 |---|---|
 | Smart Contracts | Solidity 0.8.20 + Foundry |
 | Chain | BSC Testnet (Chain ID: 97) |
-| AI Validation | GenLayer Python SDK (Bradbury Testnet) |
 | Signing | viem + EIP-712 |
 | Frontend | React + Vite |
 | Relayer | Node.js (ESM) |
 
 ## 📄 License
-
 MIT

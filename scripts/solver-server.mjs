@@ -4,6 +4,7 @@ import { createPublicClient, createWalletClient, http, parseAbi } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
 import { bscTestnet } from 'viem/chains';
 import { settleIntent } from './apolo-relayer.mjs';
+import { trackMetric } from './metrics.mjs';
 
 const PORT = Number(process.env.SOLVER_PORT || 3001);
 const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT_ADDRESS || '0xc065d530eAb19955EedC11BD51920625100B3a6A';
@@ -134,6 +135,8 @@ app.post('/intent', async (req, res) => {
       updatedAt: Date.now(),
       error: ''
     });
+
+    trackMetric('created', amountWei.toString());
 
     void (async () => {
       try {
