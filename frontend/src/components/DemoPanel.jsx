@@ -8,9 +8,9 @@ const SOLVER_URL = (import.meta.env.VITE_SOLVER_URL ?? 'http://localhost:3001') 
 
 const initialPipeline = [
   { key: 'intent',     name: 'Intent signed',    label: 'Offchain',          status: 'idle', link: '' },
-  { key: 'escrow',     name: 'Escrow funded',    label: 'BSC Testnet',       status: 'idle', link: '' },
-  { key: 'validation', name: 'API verified',     label: 'GenLayer Bradbury', status: 'idle', link: '' },
-  { key: 'settlement', name: 'Payment released', label: 'BSC Testnet',       status: 'idle', link: '' },
+  { key: 'escrow',     name: 'Escrow funded',    label: 'BNB Mainnet',       status: 'idle', link: '' },
+  { key: 'validation', name: 'API verified',     label: 'Offchain Verifier', status: 'idle', link: '' },
+  { key: 'settlement', name: 'Payment released', label: 'BNB Mainnet',       status: 'idle', link: '' },
 ];
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -217,7 +217,7 @@ export default function DemoPanel() {
       setPipeline((p) =>
         p.map((s) => {
           if (s.key === 'escrow' && body.txHash) {
-            return { ...s, status: 'completed', link: `https://testnet.bscscan.com/tx/${body.txHash}` };
+            return { ...s, status: 'completed', link: `https://bscscan.com/tx/${body.txHash}` };
           }
           if (s.key === 'validation') {
             return { ...s, status: 'active' };
@@ -288,7 +288,7 @@ export default function DemoPanel() {
           prev.map((step) => {
             const settled = data.status === 'RELEASED' || data.status === 'REFUNDED';
             if (step.key === 'escrow' && escrowTx) {
-              return { ...step, status: 'completed', link: `https://testnet.bscscan.com/tx/${escrowTx}` };
+              return { ...step, status: 'completed', link: `https://bscscan.com/tx/${escrowTx}` };
             }
             if (step.key === 'validation') {
               // advances on real validate tx OR consensus anchor (manual mode)
@@ -309,7 +309,7 @@ export default function DemoPanel() {
                 return {
                   ...step,
                   status: 'completed',
-                  link: data.links?.settlement || (data.settlementTxHash ? `https://testnet.bscscan.com/tx/${data.settlementTxHash}` : step.link),
+                  link: data.links?.settlement || (data.settlementTxHash ? `https://bscscan.com/tx/${data.settlementTxHash}` : step.link),
                 };
               }
               if (data.anchorFinalityTxHash) {
@@ -380,7 +380,7 @@ export default function DemoPanel() {
               />
             </div>
             <div>
-              <label className="block text-xs font-mono text-[#999] mb-1.5">amount_tbnb</label>
+              <label className="block text-xs font-mono text-[#999] mb-1.5">amount_bnb</label>
               <input
                 type="number"
                 step="0.0001"
@@ -471,7 +471,7 @@ export default function DemoPanel() {
                   <p className="text-xs font-mono text-[#999] uppercase tracking-widest mb-2">On-chain transactions</p>
                   {escrowTx && (
                     <a
-                      href={`https://testnet.bscscan.com/tx/${escrowTx}`}
+                      href={`https://bscscan.com/tx/${escrowTx}`}
                       target="_blank"
                       rel="noreferrer"
                       className="flex items-center justify-between text-xs font-mono text-[#555] hover:text-[#111] transition-colors"
@@ -482,7 +482,7 @@ export default function DemoPanel() {
                   )}
                   {settlementTx && (
                     <a
-                      href={`https://testnet.bscscan.com/tx/${settlementTx}`}
+                      href={`https://bscscan.com/tx/${settlementTx}`}
                       target="_blank"
                       rel="noreferrer"
                       className="flex items-center justify-between text-xs font-mono text-[#555] hover:text-[#111] transition-colors"
@@ -526,13 +526,13 @@ export default function DemoPanel() {
                   )}
                   {intentHash && (
                     <a
-                      href={`https://testnet.bscscan.com/address/0xc065d530eAb19955EedC11BD51920625100B3a6A`}
+                      href={`https://bscscan.com/address/0x055ad3F93Cca3B7df30a9C11AD37EBBe8b41cd4d`}
                       target="_blank"
                       rel="noreferrer"
                       className="flex items-center justify-between text-xs font-mono text-[#555] hover:text-[#111] transition-colors"
                     >
                       <span>Escrow contract</span>
-                      <span className="text-[#999]">0xc065...3a6A ↗</span>
+                      <span className="text-[#999]">0x055a...cd4d ↗</span>
                     </a>
                   )}
                 </div>

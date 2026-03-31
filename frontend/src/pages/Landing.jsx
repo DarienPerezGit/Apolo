@@ -5,7 +5,7 @@ import genlayerLogo from '../assets/tech/genlayer.jpg';
 import ethereumLogo from '../assets/tech/ethereum.png';
 import karpathyImage from '../assets/karpathy.webp';
 
-const ESCROW_ADDRESS = '0xc065d530eAb19955EedC11BD51920625100B3a6A';
+const ESCROW_ADDRESS = '0x055ad3F93Cca3B7df30a9C11AD37EBBe8b41cd4d';
 const FOOTER_VIDEO = '/11_Foundation_Pass1.mp4';
 
 /* ── Proof / status strip ── */
@@ -21,7 +21,7 @@ function ProofStrip() {
 
         <span className="ml-auto">
           <a
-            href={`https://testnet.bscscan.com/address/${ESCROW_ADDRESS}`}
+            href={`https://bscscan.com/address/${ESCROW_ADDRESS}`}
             target="_blank"
             rel="noreferrer"
             className="text-xs font-mono text-white/55 hover:text-white transition-colors"
@@ -44,7 +44,7 @@ const MODULES = [
   {
     index: '02',
     label: 'Verify',
-    body: 'AI validators check\nthe real endpoint.',
+    body: 'Off-chain verifiers check\nthe real endpoint.',
   },
   {
     index: '03',
@@ -115,52 +115,97 @@ export default function Landing() {
 
         {/* Nav */}
         <nav className="relative z-10 px-8 py-6 flex items-center justify-between">
-          <span className="text-sm font-bold tracking-[0.25em] uppercase text-[#111]">Apolo</span>
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-bold tracking-[0.25em] uppercase text-[#111]">Apolo</span>
+            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-100">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 status-pulse" />
+              <span className="text-[10px] font-mono font-bold text-emerald-700 uppercase tracking-wider">Live on BNB Mainnet</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-6">
             <Link
               to="/demo"
-              className="hidden sm:inline text-xs font-mono text-[#999] hover:text-[#444] transition-colors"
+              className="text-xs font-mono font-bold text-[#111] hover:text-[#444] transition-colors"
             >
-              Try Demo →
+              Dashboard →
             </Link>
-            <span className="hidden md:inline text-xs font-mono text-[#999]">BSC Testnet · GenLayer StudioNet (Bradbury-compatible)</span>
-            <span className="w-[7px] h-[7px] rounded-full bg-emerald-500 status-pulse" />
+            <a 
+              href="https://github.com/DarienPerezGit/aleph-hackathon" 
+              target="_blank" 
+              rel="noreferrer" 
+              className="hidden md:inline text-xs font-mono text-[#999] hover:text-[#444] transition-colors"
+            >
+              GitHub
+            </a>
           </div>
         </nav>
 
         {/* Hero content */}
         <div className="relative z-10 flex-1 flex items-center px-8 md:px-16 lg:px-24">
           <div className="max-w-3xl">
-            <p className="text-xs font-mono text-[#999] uppercase tracking-widest mb-6">
-              Proof-of-outcome
-            </p>
+            <div className="flex items-center gap-3 mb-6">
+              <p className="text-xs font-mono text-[#999] uppercase tracking-widest">
+                Settlement Layer
+              </p>
+              <span className="w-1 h-1 rounded-full bg-[#ccc]" />
+              <p className="text-xs font-mono text-[#999] uppercase tracking-widest">
+                Software 3.0
+              </p>
+            </div>
 
             <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-[5.5rem] font-extrabold tracking-[-0.035em] leading-[0.95] text-[#111] mb-7">
               Ship assertions.<br />not promises.
             </h1>
 
             <p className="text-lg md:text-xl text-[#555] max-w-lg leading-relaxed mb-14">
-              Merging code is not the same as shipping working software.
+              Verifiable bank accounts for the Agentic Economy. <br />
+              Ensure payment only when conditions are met.
             </p>
 
 
             <div className="flex flex-wrap items-center gap-4">
               <Link
                 to="/demo"
-                className="group inline-flex items-center gap-2.5 bg-[#111] text-white px-7 py-3 text-sm font-semibold tracking-wide rounded-[12px] transition-all hover:bg-[#222] card-hover"
+                className="group inline-flex items-center gap-2.5 bg-[#111] text-white px-7 py-3.5 text-sm font-semibold tracking-wide rounded-[12px] transition-all hover:bg-[#222] card-hover"
               >
                 <span className="text-[13px] transition-transform group-hover:translate-x-0.5">→</span>
-                Try it live
+                Launch Console
               </Link>
               <a
-                href={`https://testnet.bscscan.com/address/${ESCROW_ADDRESS}`}
+                href={`https://bscscan.com/address/${ESCROW_ADDRESS}`}
                 target="_blank"
                 rel="noreferrer"
-                className="group inline-flex items-center gap-2.5 border border-black/10 bg-white/70 backdrop-blur-sm px-7 py-3 text-sm font-medium text-[#444] tracking-wide rounded-[12px] transition-all hover:border-black/20 hover:text-[#111] card-hover"
+                className="group inline-flex items-center gap-2.5 border border-black/10 bg-white/70 backdrop-blur-sm px-7 py-3.5 text-sm font-medium text-[#444] tracking-wide rounded-[12px] transition-all hover:border-black/20 hover:text-[#111] card-hover"
               >
-                <span className="text-[13px] transition-transform group-hover:translate-x-0.5">→</span>
-                Inspect contract
+                Inspect Contract
               </a>
+            </div>
+
+            {/* Micro-Proof Block */}
+            <div className="mt-12 pt-8 border-t border-black/[0.05] flex flex-wrap items-center gap-x-10 gap-y-4">
+              <div className="space-y-1">
+                <p className="text-[10px] font-mono text-[#999] uppercase tracking-wider">Contract Address</p>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-mono text-[#444]">{ESCROW_ADDRESS}</span>
+                  <button 
+                    onClick={() => navigator.clipboard.writeText(ESCROW_ADDRESS)}
+                    className="text-[10px] font-mono text-emerald-600 hover:text-emerald-700 font-bold"
+                  >
+                    [copy]
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[10px] font-mono text-[#999] uppercase tracking-wider">Deployment Proof</p>
+                <a 
+                  href="https://bscscan.com/tx/0x1284cda32301220a2bb94d75a7e5fe37ac5c55f89c3f8ab3ded366f2d1dd3cb8"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block text-xs font-mono text-[#444] hover:underline"
+                >
+                  0x1284cd...3cb8 ↗
+                </a>
+              </div>
             </div>
           </div>
         </div>
@@ -258,6 +303,66 @@ export default function Landing() {
             </p>
           </div>
         </div>
+
+        {/* ── LIVE PROOFS (Institutional Credibility) ── */}
+        <div className="max-w-6xl mx-auto mt-20 px-6 md:px-8">
+          <div className="reveal-up bg-white/[0.03] border border-white/[0.08] rounded-[20px] p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-8 backdrop-blur-sm">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 status-pulse" />
+                <p className="text-[10px] font-mono font-bold text-emerald-500 uppercase tracking-widest">Live Proofs</p>
+              </div>
+              <p className="text-xs font-mono text-white/60 mb-1 uppercase tracking-wider">Contract Address</p>
+              <div className="flex items-center gap-3">
+                <span className="text-[13px] font-mono text-white/90 truncate">{ESCROW_ADDRESS}</span>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => navigator.clipboard.writeText(ESCROW_ADDRESS)} 
+                    className="text-[10px] font-mono text-white/40 hover:text-white transition-colors"
+                  >
+                    [copy]
+                  </button>
+                  <a 
+                    href={`https://bscscan.com/address/${ESCROW_ADDRESS}`} 
+                    target="_blank" 
+                    rel="noreferrer" 
+                    className="text-[10px] font-mono text-white/40 hover:text-white transition-colors"
+                  >
+                    [bscscan]
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-mono text-white/60 mb-1 uppercase tracking-wider">Deploy Proof</p>
+              <div className="flex items-center gap-3">
+                <span className="text-[13px] font-mono text-white/90 truncate">0x1284cda32301220a2bb94d75a7e5fe37ac5c55f89c3f8ab3ded366f2d1dd3cb8</span>
+                <a 
+                  href="https://bscscan.com/tx/0x1284cda32301220a2bb94d75a7e5fe37ac5c55f89c3f8ab3ded366f2d1dd3cb8" 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="text-[10px] font-mono text-white/40 hover:text-white transition-colors"
+                >
+                  [view]
+                </a>
+              </div>
+            </div>
+
+            <div className="w-px h-12 bg-white/10 hidden lg:block" />
+
+            <div className="grid grid-cols-1 gap-2">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono text-white/50">Network:</span>
+                <span className="text-xs font-mono text-emerald-500 font-bold">BNB Mainnet (56) ✅</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-mono text-white/50">Settlement:</span>
+                <span className="text-xs font-mono text-white/90">Trusted Relayer (V1)</span>
+              </div>
+            </div>
+          </div>
+        </div>
       </section>
 
       {/* ══════════════ FOOTER ══════════════ */}
@@ -269,11 +374,11 @@ export default function Landing() {
           muted
           loop
           playsInline
-          className="pointer-events-none absolute z-[1] left-1/2 -translate-x-1/2 -top-[150vh] h-[235vh] w-[120vw] sm:w-[105vw] md:w-auto max-w-none object-contain object-bottom opacity-30 md:opacity-38 lg:opacity-40 mix-blend-screen blur-[0.3px] md:blur-[0.6px] md:-top-[190vh] lg:-top-[205vh] md:h-[285vh] lg:h-[300vh]"
+          className="pointer-events-none absolute z-[1] left-1/2 -translate-x-1/2 -top-[100vh] h-[160vh] w-[120vw] sm:w-[105vw] md:w-auto max-w-none object-contain object-bottom opacity-30 md:opacity-38 lg:opacity-40 mix-blend-screen blur-[0.3px] md:blur-[0.6px] md:-top-[110vh] lg:-top-[115vh] md:h-[180vh] lg:h-[200vh]"
           style={{
             filter: 'saturate(1.02)',
-            WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 76%, rgba(0,0,0,0) 83%)',
-            maskImage: 'linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 76%, rgba(0,0,0,0) 83%)',
+            WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 56%, rgba(0,0,0,0) 80%)',
+            maskImage: 'linear-gradient(to top, rgba(0,0,0,1) 0%, rgba(0,0,0,1) 56%, rgba(0,0,0,0) 80%)',
           }}
         >
           <source src={FOOTER_VIDEO} type="video/mp4" />
@@ -282,7 +387,7 @@ export default function Landing() {
         <div className="absolute inset-0 bg-gradient-to-b from-[#050505]/85 via-[#050505]/35 to-[#050505]/85" />
         <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(circle at 50% 65%, rgba(139, 92, 246, 0.22) 0%, rgba(139, 92, 246, 0) 45%)' }} />
 
-        <div className="relative z-10 max-w-6xl mx-auto px-6 md:px-12 pt-36 pb-8 min-h-[760px] flex flex-col justify-end">
+        <div className="relative z-10 max-w-6xl mx-auto px-6 md:px-12 pt-24 pb-8 min-h-[500px] flex flex-col justify-end">
           <div className="grid grid-cols-1 md:grid-cols-5 gap-12 md:gap-10">
             <div className="md:col-span-2">
               <h3 className="text-3xl font-semibold tracking-tight">Apolo Protocol</h3>
@@ -296,14 +401,14 @@ export default function Landing() {
               <div className="space-y-4 text-white/80">
                 <Link to="/demo" className="block hover:text-white transition-colors">Try Demo</Link>
                 <a href="https://docs.genlayer.com" target="_blank" rel="noreferrer" className="block hover:text-white transition-colors">Validation</a>
-                <a href={`https://testnet.bscscan.com/address/${ESCROW_ADDRESS}`} target="_blank" rel="noreferrer" className="block hover:text-white transition-colors">Escrow Contract</a>
+                <a href={`https://bscscan.com/address/${ESCROW_ADDRESS}`} target="_blank" rel="noreferrer" className="block hover:text-white transition-colors">Escrow Contract</a>
               </div>
             </div>
 
             <div>
               <h4 className="text-xl font-semibold mb-6">Network</h4>
               <div className="space-y-4 text-white/80">
-                <a href="https://testnet.bscscan.com" target="_blank" rel="noreferrer" className="block hover:text-white transition-colors">BSC Testnet</a>
+                <a href="https://bscscan.com" target="_blank" rel="noreferrer" className="block hover:text-white transition-colors">BNB Mainnet</a>
                 <a href="https://genlayer.com" target="_blank" rel="noreferrer" className="block hover:text-white transition-colors">GenLayer</a>
                 <span className="block text-white/55">{ESCROW_ADDRESS.slice(0, 6)}...{ESCROW_ADDRESS.slice(-4)}</span>
               </div>

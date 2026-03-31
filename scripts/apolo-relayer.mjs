@@ -3,13 +3,12 @@ import { createAccount as createGenLayerAccount, createClient as createGenLayerC
 import { studionet } from 'genlayer-js/chains';
 import { createPublicClient, createWalletClient, http, parseAbi } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { bscTestnet } from 'viem/chains';
+import { bsc } from 'viem/chains';
 import { trackMetric } from './metrics.mjs';
 
 const requiredEnv = [
   'ESCROW_CONTRACT_ADDRESS',
-  'GENLAYER_CONTRACT_ADDRESS',
-  'BSC_TESTNET_RPC'
+  'BSC_RPC'
 ];
 
 for (const key of requiredEnv) {
@@ -24,9 +23,7 @@ if (!privateKey) {
 }
 
 const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT_ADDRESS;
-const GENLAYER_CONTRACT_ADDRESS = process.env.GENLAYER_CONTRACT_ADDRESS;
-const GENLAYER_ANCHOR_CONTRACT_ADDRESS = process.env.GENLAYER_ANCHOR_CONTRACT_ADDRESS || GENLAYER_CONTRACT_ADDRESS;
-const BSC_TESTNET_RPC = process.env.BSC_TESTNET_RPC;
+const BSC_RPC = process.env.BSC_RPC;
 const DEFAULT_EVIDENCE_URL = process.env.GENLAYER_EVIDENCE_URL ?? '';
 const MANUAL_VALIDATION_RESULT = process.env.MANUAL_VALIDATION_RESULT ?? '';
 const MANUAL_VALIDATION_TX_HASH = process.env.MANUAL_VALIDATION_TX_HASH ?? '';
@@ -43,13 +40,13 @@ const account = privateKeyToAccount(privateKey);
 
 const walletClient = createWalletClient({
   account,
-  chain: bscTestnet,
-  transport: http(BSC_TESTNET_RPC)
+  chain: bsc,
+  transport: http(BSC_RPC)
 });
 
 const publicClient = createPublicClient({
-  chain: bscTestnet,
-  transport: http(BSC_TESTNET_RPC)
+  chain: bsc,
+  transport: http(BSC_RPC)
 });
 
 const genlayerClient = createGenLayerClient({
@@ -321,7 +318,7 @@ export async function settleIntent(intentHash, validationContext = {}) {
     intentHash,
     action: functionName,
     txHash,
-    bscScanUrl: `https://testnet.bscscan.com/tx/${txHash}`
+    bscScanUrl: `https://bscscan.com/tx/${txHash}`
   });
 
   if (functionName === 'release') {

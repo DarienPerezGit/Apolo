@@ -45,7 +45,7 @@ Located at c:/Users/PC/Proyectos/
 
 ## Wallet
 Solver: 0xa2e036eD6f43baC9c67B6B098E8B006365b01464
-- tBNB on BSC Testnet ✅
+- BNB on BNB Mainnet ✅
 - GEN on GenLayer Bradbury ✅
 
 ## Hackathon deadline

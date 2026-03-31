@@ -70,7 +70,7 @@ Apolo es una herramienta de bounties para APIs: el cliente define una condición
 - Python 3.10+
 - Foundry (`forge`, `cast`)
 - GenLayer CLI (para `init` / `up`)
-- Wallet con tBNB para BSC Testnet
+- Wallet con BNB para BNB Mainnet
 - Variables configuradas en `.env` (basado en `.env.example`)
 
 ### 1) GenLayer (init, up, deploy Python validator)

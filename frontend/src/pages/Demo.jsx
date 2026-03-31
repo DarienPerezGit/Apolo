@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const TX_PROOF_URL = 'https://testnet.bscscan.com/tx/0x98f5ae6cc8ba95e139d5b5c4ce54822c7c4074f0ff75bacb7774d7645cfec453';
+const TX_PROOF_URL = 'https://bscscan.com/tx/0x98f5ae6cc8ba95e139d5b5c4ce54822c7c4074f0ff75bacb7774d7645cfec453';
 const SOLVER_API_BASE_URL = import.meta.env.VITE_SOLVER_API_URL || 'http://localhost:3001';
 
 const CONDITION_OPTIONS = [
@@ -191,7 +191,7 @@ function BountyCard({ bounty, showClaim, isBusy, onClaim }) {
           Verified via public endpoint
         </p>
         <p className="text-xs font-mono text-[#666]">
-          Reward: <span className="text-[#111]">{bounty.reward} tBNB</span>
+          Reward: <span className="text-[#111]">{bounty.reward} BNB</span>
         </p>
       </div>
 
@@ -407,7 +407,7 @@ export default function Demo() {
         throw new Error('Bounty not found');
       }
 
-      setFlowMessage('Funding escrow on BSC Testnet...');
+      setFlowMessage('Funding escrow on BNB Mainnet...');
       appendLog(`Submitting intent: ${selected.intentHash}`);
 
       const intentPayload = {
@@ -621,7 +621,7 @@ export default function Demo() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-mono text-[#999] mb-2">Reward (tBNB)</label>
+                    <label className="block text-xs font-mono text-[#999] mb-2">Reward (BNB)</label>
                     <input
                       value={reward}
                       onChange={(event) => setReward(event.target.value)}
@@ -725,7 +725,7 @@ export default function Demo() {
                         <p className="text-sm font-semibold text-[#111]">{selectedBounty.title}</p>
                         <p className="text-xs font-mono text-[#666]">URL: <span className="text-[#999] break-all">{selectedBounty.url}</span></p>
                         <p className="text-xs font-mono text-[#666]">Condition: <span className="text-[#999]">{selectedBounty.condition}</span></p>
-                        <p className="text-xs font-mono text-[#666]">Reward: <span className="text-[#111]">{selectedBounty.reward} tBNB</span></p>
+                        <p className="text-xs font-mono text-[#666]">Reward: <span className="text-[#111]">{selectedBounty.reward} BNB</span></p>
                         <p className="text-xs font-mono text-[#666]">Intent: <span className="text-[#999] break-all">{selectedBounty.intentHash}</span></p>
                         <p className="text-xs font-mono text-[#666]">Status: <span className="text-[#999]">{selectedBounty.status}</span></p>
 

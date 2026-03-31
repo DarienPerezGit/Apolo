@@ -2,13 +2,13 @@ import 'dotenv/config';
 import express from 'express';
 import { createPublicClient, createWalletClient, http, parseAbi } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { bscTestnet } from 'viem/chains';
+import { bsc } from 'viem/chains';
 import { settleIntent } from './apolo-relayer.mjs';
-import { trackMetric } from './metrics.mjs';
+import { getMetrics, trackMetric } from './metrics.mjs';
 
 const PORT = Number(process.env.SOLVER_PORT || 3001);
-const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT_ADDRESS || '0xc065d530eAb19955EedC11BD51920625100B3a6A';
-const BSC_TESTNET_RPC = process.env.BSC_TESTNET_RPC || 'https://data-seed-prebsc-1-s1.binance.org:8545';
+const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT_ADDRESS;
+const BSC_RPC = process.env.BSC_RPC || 'https://bsc-dataseed.binance.org';
 const privateKey = process.env.SOLVER_PRIVATE_KEY || process.env.PRIVATE_KEY;
 
 if (!privateKey) {
@@ -73,12 +73,12 @@ async function readOnchainIntentStatus(intentHash) {
 const account = privateKeyToAccount(privateKey);
 const walletClient = createWalletClient({
   account,
-  chain: bscTestnet,
-  transport: http(BSC_TESTNET_RPC)
+  chain: bsc,
+  transport: http(BSC_RPC)
 });
 const publicClient = createPublicClient({
-  chain: bscTestnet,
-  transport: http(BSC_TESTNET_RPC)
+  chain: bsc,
+  transport: http(BSC_RPC)
 });
 
 const app = express();
@@ -185,7 +185,7 @@ app.post('/intent', async (req, res) => {
     return res.json({
       txHash,
       status: receipt.status,
-      bscScanUrl: `https://testnet.bscscan.com/tx/${txHash}`
+      bscScanUrl: `https://bscscan.com/tx/${txHash}`
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });
@@ -229,8 +229,8 @@ app.get('/intent/:hash/status', async (req, res) => {
       anchorFinalityTxHash: runtimeFinalityTx,
       error: runtime.error,
       links: {
-        escrow: runtimeEscrowTx ? `https://testnet.bscscan.com/tx/${runtimeEscrowTx}` : '',
-        settlement: runtimeSettlementTx ? `https://testnet.bscscan.com/tx/${runtimeSettlementTx}` : '',
+        escrow: runtimeEscrowTx ? `https://bscscan.com/tx/${runtimeEscrowTx}` : '',
+        settlement: runtimeSettlementTx ? `https://bscscan.com/tx/${runtimeSettlementTx}` : '',
         genlayerValidation: runtimeValidateTx ? `${GENLAYER_EXPLORER_BASE_URL}/tx/${runtimeValidateTx}` : '',
         genlayerConsensus: runtimeConsensusTx ? `${GENLAYER_EXPLORER_BASE_URL}/tx/${runtimeConsensusTx}` : '',
         genlayerFinality: runtimeFinalityTx ? `${GENLAYER_EXPLORER_BASE_URL}/tx/${runtimeFinalityTx}` : '',
@@ -241,6 +241,15 @@ app.get('/intent/:hash/status', async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/metrics', (req, res) => {
+  try {
+    const data = getMetrics();
+    res.json(data);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });
 

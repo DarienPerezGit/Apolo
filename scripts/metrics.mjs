@@ -3,6 +3,18 @@ import path from 'path';
 
 const metricsFile = path.resolve('metrics.json');
 
+export function getMetrics() {
+  let data = { created: 0, settled: 0, refunded: 0, volumeLockedWei: '0' };
+  try {
+    if (fs.existsSync(metricsFile)) {
+      data = JSON.parse(fs.readFileSync(metricsFile, 'utf8'));
+    }
+  } catch (e) {
+    console.error('Failed to read metrics:', e);
+  }
+  return data;
+}
+
 export function trackMetric(event, amountWei = '0') {
   try {
     let data = { created: 0, settled: 0, refunded: 0, volumeLockedWei: '0' };

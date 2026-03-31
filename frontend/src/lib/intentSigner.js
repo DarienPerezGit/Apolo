@@ -1,9 +1,9 @@
 import { hashTypedData } from 'viem';
 
 const domain = {
-  name: 'Rebyt',
+  name: 'Apolo',
   version: '1',
-  chainId: 97
+  chainId: 56
 };
 
 const types = {
