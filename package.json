@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "relayer": "node scripts/apolo-relayer.mjs",
-    "solver": "node scripts/solver-server.mjs",
+    "solver": "node scripts/apolo-server.mjs",
     "generate-proof": "node scripts/generate-proof.mjs"
   },
   "dependencies": {

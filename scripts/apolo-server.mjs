@@ -6,7 +6,7 @@ import { bsc } from 'viem/chains';
 import { settleIntent } from './apolo-relayer.mjs';
 import { getMetrics } from './metrics.mjs';
 
-const PORT = Number(process.env.SOLVER_PORT || 3001);
+const PORT = Number(process.env.PORT || process.env.SOLVER_PORT || 3001);
 const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT_ADDRESS || '0x055ad3F93Cca3B7df30a9C11AD37EBBe8b41cd4d';
 const BSC_RPC = process.env.BSC_RPC || 'https://bsc-dataseed.binance.org';
 const privateKey = process.env.SOLVER_PRIVATE_KEY || process.env.PRIVATE_KEY;
@@ -237,7 +237,7 @@ app.post('/intent', async (req, res) => {
     return res.json({
       txHash,
       status: receipt.status,
-      bscScanUrl: `https://testnet.bscscan.com/tx/${txHash}`
+      bscScanUrl: `https://bscscan.com/tx/${txHash}`
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });
