@@ -9,6 +9,7 @@ __pycache__/
 # Temporary QA / forensic scripts
 scripts/_tmp_*.mjs
 scripts/qa-*.mjs
+!scripts/qa-a2a-case-study.mjs
 
 # Local run logs
 scripts/*.out.log

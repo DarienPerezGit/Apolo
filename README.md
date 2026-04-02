@@ -114,6 +114,34 @@ Produces `agent-report.json` with:
 - `fund` + `settle` BSCScan links
 - Full on-chain proof
 
+### Reproduce the external agent case study
+
+Use this flow when you want to prove that the external A2A agent is driving settlement end-to-end.
+
+```bash
+# Terminal 1 — local solver
+node scripts/apolo-server.mjs
+
+# Terminal 2 — expose solver publicly for the Render agent
+ngrok http 3001
+
+# Terminal 3 — run the approved path
+AGENT_URL=https://apolo-0qpf.onrender.com \
+SOLVER_URL=https://YOUR-NGROK-URL.ngrok-free.dev \
+node scripts/qa-a2a-case-study.mjs
+
+# Terminal 3 — run the rejected path
+AGENT_URL=https://apolo-0qpf.onrender.com \
+SOLVER_URL=https://YOUR-NGROK-URL.ngrok-free.dev \
+node scripts/qa-a2a-case-study.mjs https://httpbin.org/status/500
+```
+
+Expected outcome:
+- `200` SLA path settles with `release`
+- `500` SLA path settles with `refund`
+- Each run prints `intentHash`, evidence checks, and BSCScan links for `fund` + `settle`
+- The runner writes `agent-report.json` for handoff and audit trail
+
 ### Deploy to cloud (Render)
 
 ```bash
