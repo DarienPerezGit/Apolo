@@ -30,6 +30,13 @@ AGENT_URL = os.getenv("AGENT_URL", "http://localhost:8080")
 SOLVER_URL = os.getenv("SOLVER_URL", "http://localhost:3001")
 
 
+def maybe_ngrok_headers(url: str) -> dict:
+    headers = {}
+    if "ngrok-free.dev" in url or "ngrok-free.app" in url:
+        headers["ngrok-skip-browser-warning"] = "true"
+    return headers
+
+
 def random_intent_hash() -> str:
     return "0x" + "".join(random.choices("0123456789abcdef", k=64))
 
@@ -60,6 +67,7 @@ async def fund_escrow(intent_hash: str, amount_wei: str = "100000000000000") -> 
                     "evidenceUrl": "",
                 },
             },
+            headers=maybe_ngrok_headers(SOLVER_URL),
         )
         resp.raise_for_status()
         return resp.json()
@@ -106,7 +114,7 @@ async def send_task_to_agent(
         resp = await client.post(
             AGENT_URL,
             json=payload,
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", **maybe_ngrok_headers(AGENT_URL)},
         )
         resp.raise_for_status()
         result = resp.json()

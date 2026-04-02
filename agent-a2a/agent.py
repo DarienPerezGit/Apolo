@@ -258,6 +258,8 @@ class ApoloSLAWatcherAgent(AgentExecutor):
         headers = {"Content-Type": "application/json"}
         if agent_key:
             headers["X-APOLO-AGENT-KEY"] = agent_key
+        if "ngrok-free.dev" in solver_url or "ngrok-free.app" in solver_url:
+            headers["ngrok-skip-browser-warning"] = "true"
         try:
             async with httpx.AsyncClient(timeout=60) as client:
                 resp = await client.post(
