@@ -34,6 +34,15 @@ def random_intent_hash() -> str:
     return "0x" + "".join(random.choices("0123456789abcdef", k=64))
 
 
+def extract_parts(parts, report):
+    for part in parts or []:
+        if part.get("kind") == "text" and part.get("text"):
+            print(part["text"])
+        if part.get("kind") == "data" and part.get("data"):
+            report = part["data"]
+    return report
+
+
 async def fund_escrow(intent_hash: str, amount_wei: str = "100000000000000") -> dict:
     """
     Fund an escrow via the Apolo solver (defer=true skips auto-settlement).
@@ -106,6 +115,11 @@ async def send_task_to_agent(
     report = {}
     try:
         task = result.get("result", {})
+
+        if task.get("kind") == "message":
+            report = extract_parts(task.get("parts") or [], report)
+            return report
+
         artifacts = task.get("artifacts") or []
         history = task.get("history") or []
         status_msg = (task.get("status") or {}).get("message") or {}
@@ -113,16 +127,10 @@ async def send_task_to_agent(
         # Collect all messages for display
         all_messages = history + ([status_msg] if status_msg else [])
         for msg in all_messages:
-            for part in msg.get("parts") or []:
-                if part.get("kind") == "text" and part.get("text"):
-                    print(part["text"])
-                if part.get("kind") == "data" and part.get("data"):
-                    report = part["data"]
+            report = extract_parts(msg.get("parts") or [], report)
 
         for artifact in artifacts:
-            for part in artifact.get("parts") or []:
-                if part.get("kind") == "data":
-                    report = part["data"]
+            report = extract_parts(artifact.get("parts") or [], report)
     except Exception as exc:
         print(f"[client] Warning: could not parse response — {exc}")
         print(f"[client] Raw response: {json.dumps(result, indent=2)[:2000]}")

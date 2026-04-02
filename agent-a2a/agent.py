@@ -12,6 +12,7 @@ Flow:
 
 import asyncio
 import json
+import logging
 import os
 import time
 from datetime import datetime, timezone
@@ -20,7 +21,10 @@ import httpx
 
 from a2a.server.agent_execution import AgentExecutor, RequestContext
 from a2a.server.events import EventQueue
-from a2a.types import DataPart, Message, Part, Role, TaskState, TextPart
+from a2a.types import DataPart, Message, Part, Role, TextPart
+
+
+logger = logging.getLogger("ApoloSLAWatcherAgent")
 
 
 class ApoloSLAWatcherAgent(AgentExecutor):
@@ -44,31 +48,15 @@ class ApoloSLAWatcherAgent(AgentExecutor):
         )
 
         if not intent_hash or not sla_url:
-            await event_queue.enqueue_event(
-                self._text_message("error: intentHash and slaUrl are required")
-            )
-            await event_queue.enqueue_event(TaskState.failed)
+            await event_queue.enqueue_event(self._text_message("error: intentHash and slaUrl are required"))
             return
 
-        # ── Step 1: SLA verification ─────────────────────────────────────
-        await event_queue.enqueue_event(
-            self._text_message(
-                f"[ApoloSLAWatcher] Starting SLA check → {sla_url} "
-                f"(expected={expected_status}, checks={checks_required})"
-            )
-        )
+        logger.info("Starting SLA watcher for %s via %s", intent_hash, sla_url)
 
         check_results = []
         for i in range(checks_required):
             result = await self._check_sla(sla_url, expected_status)
             check_results.append(result)
-            status_icon = "✅" if result["passed"] else "❌"
-            await event_queue.enqueue_event(
-                self._text_message(
-                    f"  {status_icon} Check {i + 1}/{checks_required}: "
-                    f"HTTP {result['status_code']} — {result['latency_ms']}ms"
-                )
-            )
             if i < checks_required - 1:
                 await asyncio.sleep(1)
 
@@ -76,12 +64,7 @@ class ApoloSLAWatcherAgent(AgentExecutor):
         decision = "approved" if passed == checks_required else "rejected"
         decision_icon = "✅ APPROVED" if decision == "approved" else "❌ REJECTED"
 
-        await event_queue.enqueue_event(
-            self._text_message(
-                f"[ApoloSLAWatcher] Decision: {decision_icon} "
-                f"({passed}/{checks_required} checks passed)"
-            )
-        )
+        logger.info("Decision for %s: %s (%s/%s)", intent_hash, decision, passed, checks_required)
 
         # ── Step 2: Submit settlement ─────────────────────────────────────
         evidence = {
@@ -94,12 +77,6 @@ class ApoloSLAWatcherAgent(AgentExecutor):
             "decision": decision,
             "agentTimestamp": datetime.now(timezone.utc).isoformat(),
         }
-
-        await event_queue.enqueue_event(
-            self._text_message(
-                f"[ApoloSLAWatcher] Submitting settlement → {solver_url}/settle"
-            )
-        )
 
         settlement = await self._submit_settlement(
             solver_url, intent_hash, decision, evidence
@@ -140,46 +117,43 @@ class ApoloSLAWatcherAgent(AgentExecutor):
             "=" * 62,
         ]
         await event_queue.enqueue_event(
-            self._text_message("\n".join(summary_lines))
+            Message(
+                role=Role.agent,
+                parts=[
+                    Part(root=TextPart(text="\n".join(summary_lines))),
+                    Part(root=DataPart(data=report)),
+                ],
+                message_id=f"msg-final-{time.time_ns()}",
+            )
         )
-
-        # Emit structured data part for programmatic consumers
-        await event_queue.enqueue_event(self._data_message(report))
-        await event_queue.enqueue_event(TaskState.completed)
 
     async def cancel(
         self, context: RequestContext, event_queue: EventQueue
     ) -> None:
-        await event_queue.enqueue_event(TaskState.canceled)
+        logger.info("Cancel requested for task %s", context.task_id)
 
     # ── Helpers ───────────────────────────────────────────────────────────
 
     def _parse_params(self, context: RequestContext) -> dict:
-        """Extract task params from the first user message."""
+        """Extract task params from A2A MessageSend payloads across SDK variants."""
         try:
-            task = context.current_task
-            for message in task.history or []:
-                if message.role == Role.user:
-                    for part in message.parts or []:
-                        root = getattr(part, "root", part)
-                        # DataPart
-                        if hasattr(root, "data") and isinstance(root.data, dict):
-                            return root.data
-                        # TextPart — try JSON parse
-                        if hasattr(root, "text"):
-                            try:
-                                parsed = json.loads(root.text)
-                                if isinstance(parsed, dict):
-                                    return parsed
-                            except (json.JSONDecodeError, AttributeError):
-                                pass
-            # Fallback: try context.message
+            messages = []
             if context.message:
-                for part in context.message.parts or []:
-                    root = getattr(part, "root", part)
-                    if hasattr(root, "data") and isinstance(root.data, dict):
-                        return root.data
+                messages.append(context.message)
+
+            task = context.current_task
+            if task and getattr(task, "history", None):
+                messages.extend(task.history or [])
+
+            for message in messages:
+                if message.role != Role.user:
+                    continue
+                for part in message.parts or []:
+                    parsed = self._extract_from_part(part)
+                    if parsed:
+                        return parsed
         except Exception:
+            logger.exception("Failed to parse A2A request payload")
             pass
         return {}
 
@@ -187,15 +161,69 @@ class ApoloSLAWatcherAgent(AgentExecutor):
         return Message(
             role=Role.agent,
             parts=[Part(root=TextPart(text=text))],
-            messageId=f"msg-{time.time_ns()}",
+            message_id=f"msg-{time.time_ns()}",
         )
 
     def _data_message(self, data: dict) -> Message:
         return Message(
             role=Role.agent,
             parts=[Part(root=DataPart(data=data))],
-            messageId=f"msg-data-{time.time_ns()}",
+            message_id=f"msg-data-{time.time_ns()}",
         )
+
+    def _extract_from_part(self, part) -> dict:
+        root = getattr(part, "root", part)
+        kind = getattr(root, "kind", None)
+
+        if kind == "data" or hasattr(root, "data"):
+            for candidate in (getattr(root, "data", None), getattr(part, "data", None)):
+                payload = self._coerce_payload(candidate)
+                if payload:
+                    return payload
+
+            payload = self._extract_from_dump(self._model_dump(root))
+            if payload:
+                return payload
+
+        if kind == "text" or hasattr(root, "text"):
+            payload = self._coerce_payload(getattr(root, "text", None))
+            if payload:
+                return payload
+
+        return self._extract_from_dump(self._model_dump(part))
+
+    def _extract_from_dump(self, dumped) -> dict:
+        if not isinstance(dumped, dict):
+            return {}
+        for candidate in (
+            dumped,
+            dumped.get("data"),
+            dumped.get("root"),
+            (dumped.get("root") or {}).get("data") if isinstance(dumped.get("root"), dict) else None,
+        ):
+            payload = self._coerce_payload(candidate)
+            if payload:
+                return payload
+        return {}
+
+    def _coerce_payload(self, candidate) -> dict:
+        if isinstance(candidate, dict):
+            return candidate
+        if isinstance(candidate, str):
+            try:
+                parsed = json.loads(candidate)
+                return parsed if isinstance(parsed, dict) else {}
+            except json.JSONDecodeError:
+                return {}
+        if hasattr(candidate, "model_dump"):
+            dumped = candidate.model_dump(by_alias=True)
+            return dumped if isinstance(dumped, dict) else {}
+        return {}
+
+    def _model_dump(self, value):
+        if hasattr(value, "model_dump"):
+            return value.model_dump(by_alias=True)
+        return value
 
     async def _check_sla(self, url: str, expected_status: int) -> dict:
         start = time.monotonic()
