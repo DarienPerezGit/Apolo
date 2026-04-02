@@ -27,6 +27,13 @@ const escrowAbi = parseAbi([
 
 const intentStateLabels = ['PENDING', 'FUNDED', 'VALIDATING', 'RELEASED', 'REFUNDED'];
 const intentRuntime = new Map();
+// Idempotency guard: intentHashes already settled via POST /settle
+const settledByAgent = new Set();
+// Auth key for POST /settle — set AGENT_API_KEY in .env (empty = disabled, logs warning only)
+const AGENT_API_KEY = process.env.AGENT_API_KEY || '';
+if (!AGENT_API_KEY) {
+  console.warn('[solver] WARNING: AGENT_API_KEY not set. POST /settle is unauthenticated.');
+}
 const GENLAYER_EXPLORER_BASE_URL = process.env.GENLAYER_EXPLORER_BASE_URL || 'https://explorer-bradbury.genlayer.com';
 const ESCROW_DEPLOY_TX = process.env.ESCROW_DEPLOY_TX || '0x1284cda32301220a2bb94d75a7e5fe37ac5c55f89c3f8ab3ded366f2d1dd3cb8';
 
@@ -180,49 +187,52 @@ app.post('/intent', async (req, res) => {
       error: ''
     });
 
-    void (async () => {
-      try {
-        intentRuntime.set(normalizedIntentHash, {
-          ...intentRuntime.get(normalizedIntentHash),
-          status: 'VALIDATING',
-          updatedAt: Date.now()
-        });
+    // defer=true: skip auto-settlement (agent will call POST /settle separately)
+    if (!req.body?.defer) {
+      void (async () => {
+        try {
+          intentRuntime.set(normalizedIntentHash, {
+            ...intentRuntime.get(normalizedIntentHash),
+            status: 'VALIDATING',
+            updatedAt: Date.now()
+          });
 
-        // manualResult: read from env at call time (not module-load time)
-        // so restart is not required when .env changes
-        const envManual = process.env.MANUAL_VALIDATION_RESULT ?? '';
-        const manualResult = parseManualValidationResult(envManual);
+          // manualResult: read from env at call time (not module-load time)
+          // so restart is not required when .env changes
+          const envManual = process.env.MANUAL_VALIDATION_RESULT ?? '';
+          const manualResult = parseManualValidationResult(envManual);
 
-        const settlement = await settleIntent(normalizedIntentHash, {
-          condition: deliveryCondition,
-          evidenceUrl,
-          manualResult
-        });
+          const settlement = await settleIntent(normalizedIntentHash, {
+            condition: deliveryCondition,
+            evidenceUrl,
+            manualResult
+          });
 
-        const validateTxHash = normalizeTxHash(settlement.validateTxHash);
-        const settlementTxHash = normalizeTxHash(settlement.txHash);
-        const anchorConsensusTxHash = normalizeTxHash(settlement.anchorConsensusTxHash);
-        const anchorFinalityTxHash = normalizeTxHash(settlement.anchorFinalityTxHash);
+          const validateTxHash = normalizeTxHash(settlement.validateTxHash);
+          const settlementTxHash = normalizeTxHash(settlement.txHash);
+          const anchorConsensusTxHash = normalizeTxHash(settlement.anchorConsensusTxHash);
+          const anchorFinalityTxHash = normalizeTxHash(settlement.anchorFinalityTxHash);
 
-        intentRuntime.set(normalizedIntentHash, {
-          ...intentRuntime.get(normalizedIntentHash),
-          status: settlement.action === 'release' ? 'RELEASED' : 'REFUNDED',
-          validateTxHash,
-          settlementTxHash,
-          anchorConsensusTxHash,
-          anchorFinalityTxHash,
-          updatedAt: Date.now(),
-          error: ''
-        });
-      } catch (error) {
-        intentRuntime.set(normalizedIntentHash, {
-          ...intentRuntime.get(normalizedIntentHash),
-          status: 'ERROR',
-          updatedAt: Date.now(),
-          error: error.message
-        });
-      }
-    })();
+          intentRuntime.set(normalizedIntentHash, {
+            ...intentRuntime.get(normalizedIntentHash),
+            status: settlement.action === 'release' ? 'RELEASED' : 'REFUNDED',
+            validateTxHash,
+            settlementTxHash,
+            anchorConsensusTxHash,
+            anchorFinalityTxHash,
+            updatedAt: Date.now(),
+            error: ''
+          });
+        } catch (error) {
+          intentRuntime.set(normalizedIntentHash, {
+            ...intentRuntime.get(normalizedIntentHash),
+            status: 'ERROR',
+            updatedAt: Date.now(),
+            error: error.message
+          });
+        }
+      })();
+    }
 
     return res.json({
       txHash,
@@ -280,6 +290,94 @@ app.get('/intent/:hash/status', async (req, res) => {
           ? `${GENLAYER_EXPLORER_BASE_URL}/address/${process.env.GENLAYER_CONTRACT_ADDRESS}`
           : ''
       }
+    });
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /settle — explicit settlement trigger (called by external agents like ApoloSLAWatcherAgent)
+// Body: { intentHash, decision: 'approved'|'rejected', evidence?: object }
+// Headers: X-APOLO-AGENT-KEY (required when AGENT_API_KEY env is set)
+app.post('/settle', async (req, res) => {
+  try {
+    // ── Auth guard ───────────────────────────────────────────────────────
+    if (AGENT_API_KEY) {
+      const provided = req.headers['x-apolo-agent-key'] || '';
+      if (provided !== AGENT_API_KEY) {
+        return res.status(401).json({ error: 'Unauthorized: invalid X-APOLO-AGENT-KEY' });
+      }
+    }
+
+    const { intentHash, decision, evidence } = req.body || {};
+
+    if (!intentHash || typeof intentHash !== 'string') {
+      return res.status(400).json({ error: 'intentHash is required' });
+    }
+    if (!['approved', 'rejected'].includes(decision)) {
+      return res.status(400).json({ error: 'decision must be "approved" or "rejected"' });
+    }
+
+    const normalizedIntentHash = normalizeIntentHash(intentHash);
+    if (!normalizedIntentHash) {
+      return res.status(400).json({ error: 'intentHash must be bytes32 hex string' });
+    }
+
+    // ── Idempotency guard ────────────────────────────────────────────────
+    if (settledByAgent.has(normalizedIntentHash)) {
+      const cached = intentRuntime.get(normalizedIntentHash) || {};
+      return res.status(409).json({
+        error: 'already_settled',
+        message: 'This intentHash was already settled. Duplicate settlement rejected.',
+        intentHash: normalizedIntentHash,
+        status: cached.status || 'SETTLED',
+        txHash: cached.settlementTxHash || ''
+      });
+    }
+
+    const manualResult = decision === 'approved';
+    const evidenceUrl = evidence?.slaUrl || evidence?.evidenceUrl || '';
+    const condition = evidence?.condition || `SLA check: ${evidenceUrl}`;
+
+    console.log('[solver] /settle called by external agent', {
+      intentHash: normalizedIntentHash,
+      decision,
+      evidenceUrl
+    });
+
+    intentRuntime.set(normalizedIntentHash, {
+      ...(intentRuntime.get(normalizedIntentHash) || {}),
+      status: 'VALIDATING',
+      updatedAt: Date.now(),
+      error: ''
+    });
+
+    const settlement = await settleIntent(normalizedIntentHash, {
+      condition,
+      evidenceUrl,
+      manualResult
+    });
+
+    const settlementTxHash = normalizeTxHash(settlement.txHash);
+    const validateTxHash = normalizeTxHash(settlement.validateTxHash);
+
+    settledByAgent.add(normalizedIntentHash);
+
+    intentRuntime.set(normalizedIntentHash, {
+      ...(intentRuntime.get(normalizedIntentHash) || {}),
+      status: settlement.action === 'release' ? 'RELEASED' : 'REFUNDED',
+      settlementTxHash,
+      validateTxHash,
+      updatedAt: Date.now(),
+      error: ''
+    });
+
+    return res.json({
+      intentHash: normalizedIntentHash,
+      action: settlement.action,
+      txHash: settlementTxHash,
+      bscScanUrl: settlementTxHash ? `https://bscscan.com/tx/${settlementTxHash}` : '',
+      status: 'success'
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });

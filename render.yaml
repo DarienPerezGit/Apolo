@@ -1,0 +1,20 @@
+# Render deployment config for ApoloSLAWatcherAgent
+# https://render.com/docs/render-yaml-spec
+
+services:
+  - type: web
+    name: apolo-sla-watcher-agent
+    runtime: python
+    rootDir: agent-a2a
+    buildCommand: pip install -r requirements.txt
+    startCommand: python __main__.py
+    envVars:
+      - key: AGENT_PORT
+        value: 8080
+      - key: AGENT_HOST
+        value: 0.0.0.0
+      - key: SOLVER_URL
+        sync: false          # set in Render dashboard: https://your-solver.onrender.com
+      - key: AGENT_API_KEY
+        sync: false          # set in Render dashboard — must match server AGENT_API_KEY
+    healthCheckPath: /.well-known/agent.json

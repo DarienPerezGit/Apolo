@@ -63,6 +63,73 @@ Apolo is a verifiable bank-account layer for the Agentic Economy. It allows deve
 In V1, **Apolo uses a Trusted Relayer model**. 
 The relayer node is a critical component that acts as the bridge between off-chain consensus (or AI Validation) and on-chain execution. Instead of forcing heavy verification on-chain, the trusted relayer executes the outcome on the BNB Mainnet. This enables an immediate, simple, and reliable MVP for verifying operational work.
 
+---
+
+## 🤖 External Agent Integration (A2A)
+
+Apolo V1.5 includes **ApoloSLAWatcherAgent** — an external autonomous agent built on the [A2A protocol](https://github.com/a2aproject/a2a-python) that monitors SLA conditions and triggers on-chain settlement without any manual step.
+
+### Architecture
+
+```
+Client → POST /intent (defer=true) → ApoloEscrow (BNB Mainnet, locked)
+                                              ↓
+                                  ApoloSLAWatcherAgent (A2A Server)
+                                    checks slaUrl × N times
+                                    decision: approved / rejected
+                                              ↓
+                                    POST /settle → Apolo Solver
+                                              ↓
+                                    release() / refund() on-chain ✅
+```
+
+### Run the agent locally
+
+```bash
+# 1. Install deps
+pip install -r agent-a2a/requirements.txt
+
+# 2. Start the Apolo solver (Terminal 1)
+node scripts/apolo-server.mjs
+
+# 3. Start the A2A agent server (Terminal 2)
+python agent-a2a/__main__.py
+# → http://localhost:8080/.well-known/agent.json
+```
+
+Set `AGENT_API_KEY` in `.env` (both solver and agent) to authenticate agent→solver calls.
+
+### Run the full case study
+
+```bash
+# Fund a new escrow + agent validates + settles on-chain
+node scripts/qa-a2a-case-study.mjs
+
+# Test rejection path (500 → refund)
+node scripts/qa-a2a-case-study.mjs https://httpbin.org/status/500
+```
+
+Produces `agent-report.json` with:
+- `intentHash`, `decision`, structured `evidence` (3 checks with timestamps)
+- `fund` + `settle` BSCScan links
+- Full on-chain proof
+
+### Deploy to cloud (Render)
+
+```bash
+# render.yaml is included — connect repo to Render and set:
+# SOLVER_URL=https://your-solver.onrender.com
+# AGENT_API_KEY=<shared-secret>
+```
+
+### What this proves
+
+> *"We already have an external A2A agent autonomously validating an SLA and triggering BNB Mainnet settlement."*
+
+No UI button. No manual relayer run. The agent drives the full flow end-to-end.
+
+---
+
 ## 🛠 Tech Stack
 
 | Contract | Network | Address |
