@@ -19,6 +19,7 @@ from agent import ApoloSLAWatcherAgent
 
 PORT = int(os.getenv("AGENT_PORT", "8080"))
 HOST = os.getenv("AGENT_HOST", "0.0.0.0")
+PUBLIC_BASE_URL = os.getenv("AGENT_PUBLIC_URL") or os.getenv("RENDER_EXTERNAL_URL") or f"http://localhost:{PORT}"
 
 agent_card = AgentCard(
     name="ApoloSLAWatcherAgent",
@@ -27,7 +28,7 @@ agent_card = AgentCard(
         "Monitors HTTP SLA conditions, produces a deterministic approved/rejected decision, "
         "and triggers on-chain escrow settlement via the Apolo solver."
     ),
-    url=f"http://localhost:{PORT}/",
+    url=f"{PUBLIC_BASE_URL.rstrip('/')}/",
     version="1.0.0",
     defaultInputModes=["application/json"],
     defaultOutputModes=["application/json", "text/plain"],
@@ -63,5 +64,5 @@ app = A2AStarletteApplication(
 
 if __name__ == "__main__":
     print(f"ApoloSLAWatcherAgent starting on http://{HOST}:{PORT}")
-    print(f"Agent card: http://localhost:{PORT}/.well-known/agent.json")
+    print(f"Agent card: {PUBLIC_BASE_URL.rstrip('/')}/.well-known/agent.json")
     uvicorn.run(app.build(), host=HOST, port=PORT)
