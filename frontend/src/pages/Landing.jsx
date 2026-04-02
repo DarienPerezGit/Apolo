@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import solidityLogo from '../assets/tech/solidity.svg';
 import bnbLogo from '../assets/tech/bnb.png';
 import genlayerLogo from '../assets/tech/genlayer.jpg';
@@ -7,6 +8,72 @@ import karpathyImage from '../assets/karpathy.webp';
 
 const ESCROW_ADDRESS = '0x055ad3F93Cca3B7df30a9C11AD37EBBe8b41cd4d';
 const FOOTER_VIDEO = '/11_Foundation_Pass1.mp4';
+const SOLVER_URL = import.meta.env.VITE_SOLVER_URL || 'http://localhost:3001';
+
+/* ── Live Metrics ── */
+function LiveMetrics() {
+  const [metrics, setMetrics] = useState(null);
+
+  useEffect(() => {
+    const fetchMetrics = () => {
+      fetch(`${SOLVER_URL}/metrics`)
+        .then(r => r.json())
+        .then(data => setMetrics(data))
+        .catch(() => {});
+    };
+    fetchMetrics();
+    const id = setInterval(fetchMetrics, 15000);
+    return () => clearInterval(id);
+  }, []);
+
+  const stats = [
+    { icon: '🔒', label: 'Escrows Created', value: metrics ? metrics.created : '—' },
+    { icon: '💰', label: 'Volume Locked', value: metrics ? `${metrics.volumeBNB} BNB` : '—' },
+    { icon: '✅', label: 'Settled', value: metrics ? metrics.settled : '—' },
+    { icon: '🔄', label: 'Refunded', value: metrics ? metrics.refunded : '—' },
+  ];
+
+  return (
+    <section className="relative py-20 px-6 md:px-8 border-t border-white/[0.08]">
+      <div className="max-w-6xl mx-auto">
+        <div className="flex items-center justify-between mb-10">
+          <div className="flex items-center gap-3">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 status-pulse" />
+            <p className="text-[10px] font-mono font-bold text-emerald-500 uppercase tracking-widest">
+              {metrics?.source === 'onchain' ? 'On-Chain Activity' : 'Solver Activity'} — BNB Mainnet
+            </p>
+          </div>
+          <a
+            href={`https://bscscan.com/address/${ESCROW_ADDRESS}#events`}
+            target="_blank"
+            rel="noreferrer"
+            className="text-[10px] font-mono text-white/35 hover:text-white transition-colors"
+          >
+            verify on BSCScan ↗
+          </a>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {stats.map((stat) => (
+            <div
+              key={stat.label}
+              className="reveal-up bg-white/[0.04] border border-white/[0.10] rounded-[14px] p-6 flex flex-col gap-3"
+            >
+              <span className="text-2xl">{stat.icon}</span>
+              <p className="text-xs font-mono text-white/45 uppercase tracking-wider">{stat.label}</p>
+              <p className="text-3xl font-bold text-white tabular-nums">
+                {metrics === null ? (
+                  <span className="text-white/20 animate-pulse">···</span>
+                ) : (
+                  stat.value
+                )}
+              </p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
 
 /* ── Proof / status strip ── */
 function ProofStrip() {
@@ -364,6 +431,9 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      {/* ══════════════ LIVE METRICS ══════════════ */}
+      <LiveMetrics />
 
       {/* ══════════════ FOOTER ══════════════ */}
       <footer className="relative mt-20 text-white overflow-visible">

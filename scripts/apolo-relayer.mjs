@@ -322,9 +322,9 @@ export async function settleIntent(intentHash, validationContext = {}) {
   });
 
   if (functionName === 'release') {
-    trackMetric('settled', intent[1].toString());
+    trackMetric('settled', (intent.amount ?? intent[1] ?? 0n).toString());
   } else {
-    trackMetric('refunded', intent[1].toString());
+    trackMetric('refunded', (intent.amount ?? intent[1] ?? 0n).toString());
   }
 
   const receipt = await publicClient.waitForTransactionReceipt({ hash: txHash });

@@ -2,12 +2,13 @@ import 'dotenv/config';
 import express from 'express';
 import { createPublicClient, createWalletClient, http, parseAbi } from 'viem';
 import { privateKeyToAccount } from 'viem/accounts';
-import { bscTestnet } from 'viem/chains';
+import { bsc } from 'viem/chains';
 import { settleIntent } from './apolo-relayer.mjs';
+import { getMetrics } from './metrics.mjs';
 
 const PORT = Number(process.env.SOLVER_PORT || 3001);
-const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT_ADDRESS || '0xc065d530eAb19955EedC11BD51920625100B3a6A';
-const BSC_TESTNET_RPC = process.env.BSC_TESTNET_RPC || 'https://data-seed-prebsc-1-s1.binance.org:8545';
+const ESCROW_CONTRACT_ADDRESS = process.env.ESCROW_CONTRACT_ADDRESS || '0x055ad3F93Cca3B7df30a9C11AD37EBBe8b41cd4d';
+const BSC_RPC = process.env.BSC_RPC || 'https://bsc-dataseed.binance.org';
 const privateKey = process.env.SOLVER_PRIVATE_KEY || process.env.PRIVATE_KEY;
 
 if (!privateKey) {
@@ -27,6 +28,50 @@ const escrowAbi = parseAbi([
 const intentStateLabels = ['PENDING', 'FUNDED', 'VALIDATING', 'RELEASED', 'REFUNDED'];
 const intentRuntime = new Map();
 const GENLAYER_EXPLORER_BASE_URL = process.env.GENLAYER_EXPLORER_BASE_URL || 'https://explorer-bradbury.genlayer.com';
+const ESCROW_DEPLOY_TX = process.env.ESCROW_DEPLOY_TX || '0x1284cda32301220a2bb94d75a7e5fe37ac5c55f89c3f8ab3ded366f2d1dd3cb8';
+
+// ── Metrics: relayer-tracked + live contract balance ─────────────────────
+// BSCScan V1 API is fully deprecated; Etherscan V2 requires paid plan for BNB.
+// We use metrics.json (written by the relayer on every fund/settle/refund call)
+// plus the live contract balance from the BSC RPC to show locked value.
+
+let _metricsCache = null;
+let _metricsCacheTime = 0;
+const METRICS_CACHE_TTL = 30_000;
+
+async function fetchOnchainMetrics() {
+  const now = Date.now();
+  if (_metricsCache && now - _metricsCacheTime < METRICS_CACHE_TTL) {
+    return _metricsCache;
+  }
+
+  const local = getMetrics();
+
+  // Live contract balance (works on BSC dataseed — no getLogs needed)
+  let contractBalanceWei = '0';
+  try {
+    const bal = await publicClient.getBalance({ address: ESCROW_CONTRACT_ADDRESS });
+    contractBalanceWei = bal.toString();
+  } catch (_) {}
+
+  const volumeWei = local.volumeLockedWei || '0';
+
+  const result = {
+    created:            local.created  || 0,
+    settled:            local.settled  || 0,
+    refunded:           local.refunded || 0,
+    volumeBNB:          (Number(BigInt(volumeWei)) / 1e18).toFixed(4),
+    volumeWei,
+    contractBalanceBNB: (Number(BigInt(contractBalanceWei)) / 1e18).toFixed(4),
+    source:             'relayer',
+    contract:           ESCROW_CONTRACT_ADDRESS,
+    network:            'BNB Mainnet (56)',
+  };
+
+  _metricsCache = result;
+  _metricsCacheTime = now;
+  return result;
+}
 
 function normalizeIntentHash(intentHash) {
   if (!intentHash || typeof intentHash !== 'string') return '';
@@ -72,12 +117,12 @@ async function readOnchainIntentStatus(intentHash) {
 const account = privateKeyToAccount(privateKey);
 const walletClient = createWalletClient({
   account,
-  chain: bscTestnet,
-  transport: http(BSC_TESTNET_RPC)
+  chain: bsc,
+  transport: http(BSC_RPC)
 });
 const publicClient = createPublicClient({
-  chain: bscTestnet,
-  transport: http(BSC_TESTNET_RPC)
+  chain: bsc,
+  transport: http(BSC_RPC)
 });
 
 const app = express();
@@ -226,8 +271,8 @@ app.get('/intent/:hash/status', async (req, res) => {
       anchorFinalityTxHash: runtimeFinalityTx,
       error: runtime.error,
       links: {
-        escrow: runtimeEscrowTx ? `https://testnet.bscscan.com/tx/${runtimeEscrowTx}` : '',
-        settlement: runtimeSettlementTx ? `https://testnet.bscscan.com/tx/${runtimeSettlementTx}` : '',
+        escrow: runtimeEscrowTx ? `https://bscscan.com/tx/${runtimeEscrowTx}` : '',
+        settlement: runtimeSettlementTx ? `https://bscscan.com/tx/${runtimeSettlementTx}` : '',
         genlayerValidation: runtimeValidateTx ? `${GENLAYER_EXPLORER_BASE_URL}/tx/${runtimeValidateTx}` : '',
         genlayerConsensus: runtimeConsensusTx ? `${GENLAYER_EXPLORER_BASE_URL}/tx/${runtimeConsensusTx}` : '',
         genlayerFinality: runtimeFinalityTx ? `${GENLAYER_EXPLORER_BASE_URL}/tx/${runtimeFinalityTx}` : '',
@@ -238,6 +283,16 @@ app.get('/intent/:hash/status', async (req, res) => {
     });
   } catch (error) {
     return res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/metrics', async (_req, res) => {
+  try {
+    const data = await fetchOnchainMetrics();
+    return res.json(data);
+  } catch (err) {
+    console.error('[metrics] on-chain fetch failed:', err.message);
+    return res.status(502).json({ error: 'Failed to fetch on-chain metrics', detail: err.message });
   }
 });
 
