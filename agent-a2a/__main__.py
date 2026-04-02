@@ -29,6 +29,8 @@ agent_card = AgentCard(
     ),
     url=f"http://localhost:{PORT}/",
     version="1.0.0",
+    defaultInputModes=["application/json"],
+    defaultOutputModes=["application/json", "text/plain"],
     capabilities=AgentCapabilities(streaming=True),
     skills=[
         AgentSkill(
