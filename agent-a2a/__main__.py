@@ -38,6 +38,7 @@ agent_card = AgentCard(
                 "Check an HTTP endpoint N times, decide approved/rejected, "
                 "submit to Apolo solver, and return on-chain settlement proof."
             ),
+            tags=["sla", "escrow", "settlement", "bsc", "mainnet", "apolo", "a2a"],
             inputModes=["application/json"],
             outputModes=["application/json", "text/plain"],
             examples=[
