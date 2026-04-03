@@ -15,31 +15,31 @@ const WALLET_OPTIONS = [
   {
     id: 'metamask',
     name: 'MetaMask',
-    icon: 'https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/metamask.svg',
+    icon: 'https://avatars.githubusercontent.com/u/11744586?v=4&s=64',
     installUrl: 'https://metamask.io/download/',
   },
   {
     id: 'walletconnect',
     name: 'WalletConnect',
-    icon: 'https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/walletconnect.svg',
+    icon: 'https://avatars.githubusercontent.com/u/37784886?v=4&s=64',
     installUrl: 'https://walletconnect.com/wallets',
   },
   {
     id: 'coinbase',
     name: 'Coinbase Wallet',
-    icon: 'https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/coinbase.svg',
+    icon: 'https://avatars.githubusercontent.com/u/18060234?v=4&s=64',
     installUrl: 'https://www.coinbase.com/wallet/downloads',
   },
   {
     id: 'rainbow',
     name: 'Rainbow',
-    icon: 'https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/rainbow.svg',
+    icon: 'https://avatars.githubusercontent.com/u/48327834?v=4&s=64',
     installUrl: 'https://rainbow.me/',
   },
   {
     id: 'brave',
     name: 'Brave Wallet',
-    icon: 'https://cdn.jsdelivr.net/npm/simple-icons@v11/icons/brave.svg',
+    icon: 'https://avatars.githubusercontent.com/u/12301619?v=4&s=64',
     installUrl: 'https://brave.com/wallet/',
   },
 ];
@@ -67,6 +67,10 @@ function findProviderByWalletId(walletId) {
 
   if (walletId === 'coinbase') {
     return providers.find((provider) => provider?.isCoinbaseWallet) || null;
+  }
+
+  if (walletId === 'rainbow') {
+    return providers.find((provider) => provider?.isRainbow) || null;
   }
 
   return null;
@@ -213,7 +217,7 @@ function BountyCard({ bounty, showClaim, isBusy, onClaim }) {
 
 function WalletGatewayModal({ onClose, onSelect, onInstall }) {
   const isWalletInstalled = (walletId) => {
-    if (walletId === 'walletconnect' || walletId === 'rainbow') return false;
+    if (walletId === 'walletconnect') return false;
     return Boolean(findProviderByWalletId(walletId));
   };
 
@@ -256,7 +260,15 @@ function WalletGatewayModal({ onClose, onSelect, onInstall }) {
               className="flex items-center gap-3 text-left border border-black/10 rounded-[12px] px-3 py-3 hover:border-[#111] hover:bg-white transition-all"
             >
               <span className="w-8 h-8 rounded-[8px] bg-white border border-black/10 flex items-center justify-center overflow-hidden">
-                <img src={wallet.icon} alt={`${wallet.name} logo`} className="w-5 h-5" />
+                <img
+                  src={wallet.icon}
+                  alt={`${wallet.name} logo`}
+                  className="w-5 h-5 rounded-[4px]"
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.parentElement.textContent = wallet.name[0];
+                  }}
+                />
               </span>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-[#222]">{wallet.name}</p>
