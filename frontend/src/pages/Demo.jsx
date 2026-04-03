@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 
-const TX_PROOF_URL = 'https://bscscan.com/tx/0x98f5ae6cc8ba95e139d5b5c4ce54822c7c4074f0ff75bacb7774d7645cfec453';
+const CONTRACT_BSCSCAN_URL = 'https://bscscan.com/address/0x055ad3F93Cca3B7df30a9C11AD37EBBe8b41cd4d';
 const SOLVER_API_BASE_URL = import.meta.env.VITE_SOLVER_API_URL || 'http://localhost:3001';
 
 const CONDITION_OPTIONS = [
@@ -295,7 +295,7 @@ export default function Demo() {
   const [confirmation, setConfirmation] = useState('');
   const [showWalletGateway, setShowWalletGateway] = useState(false);
   const [connectedWallet, setConnectedWallet] = useState('');
-  const [proofUrl, setProofUrl] = useState(TX_PROOF_URL);
+  const [proofUrl, setProofUrl] = useState('');
 
   const [title, setTitle] = useState('');
   const [url, setUrl] = useState('');
@@ -531,12 +531,12 @@ export default function Demo() {
           <span className="text-xs font-mono text-[#999]">Marketplace demo</span>
         </div>
         <a
-          href={proofUrl}
+          href={proofUrl || CONTRACT_BSCSCAN_URL}
           target="_blank"
           rel="noreferrer"
           className="text-xs font-mono border border-black/10 px-3 py-2 rounded-[10px] hover:border-[#111] hover:bg-[#111] hover:text-white transition-all"
         >
-          View transaction on-chain ↗
+          {proofUrl ? 'View transaction on-chain ↗' : 'View contract on BSCScan ↗'}
         </a>
       </nav>
 
