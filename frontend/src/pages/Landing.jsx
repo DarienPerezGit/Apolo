@@ -8,7 +8,7 @@ import karpathyImage from '../assets/karpathy.webp';
 
 const ESCROW_ADDRESS = '0x055ad3F93Cca3B7df30a9C11AD37EBBe8b41cd4d';
 const FOOTER_VIDEO = '/11_Foundation_Pass1.mp4';
-const SOLVER_URL = import.meta.env.VITE_SOLVER_URL || 'http://localhost:3001';
+const SOLVER_URL = import.meta.env.VITE_SOLVER_URL || 'https://apolo-solver.onrender.com';
 
 /* ── Live Metrics ── */
 function LiveMetrics() {
@@ -27,10 +27,10 @@ function LiveMetrics() {
   }, []);
 
   const stats = [
-    { icon: '🔒', label: 'Escrows Created', value: metrics ? metrics.created : '—' },
-    { icon: '💰', label: 'Volume Locked', value: metrics ? `${metrics.volumeBNB} BNB` : '—' },
-    { icon: '✅', label: 'Settled', value: metrics ? metrics.settled : '—' },
-    { icon: '🔄', label: 'Refunded', value: metrics ? metrics.refunded : '—' },
+    { label: 'Escrows Created', value: metrics ? metrics.created : '—' },
+    { label: 'Volume Locked', value: metrics ? `${metrics.volumeBNB} BNB` : '—' },
+    { label: 'Settled', value: metrics ? metrics.settled : '—' },
+    { label: 'Refunded', value: metrics ? metrics.refunded : '—' },
   ];
 
   return (
@@ -58,7 +58,6 @@ function LiveMetrics() {
               key={stat.label}
               className="reveal-up bg-white/[0.04] border border-white/[0.10] rounded-[14px] p-6 flex flex-col gap-3"
             >
-              <span className="text-2xl">{stat.icon}</span>
               <p className="text-xs font-mono text-white/45 uppercase tracking-wider">{stat.label}</p>
               <p className="text-3xl font-bold text-white tabular-nums">
                 {metrics === null ? (
