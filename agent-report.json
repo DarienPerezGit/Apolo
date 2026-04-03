@@ -1,0 +1,53 @@
+{
+  "intentHash": "0x5c8fba43bce69097fa6b04d200fa937beb7398cf29c3940e407a5c2e0da209eb",
+  "contractAddress": "0x055ad3F93Cca3B7df30a9C11AD37EBBe8b41cd4d",
+  "chainId": 56,
+  "slaUrl": "https://httpbin.org/status/500",
+  "decision": "rejected",
+  "evidence": {
+    "agent": "ApoloSLAWatcherAgent/1.0",
+    "slaUrl": "https://httpbin.org/status/500",
+    "expectedStatus": 200,
+    "checks": [
+      {
+        "url": "https://httpbin.org/status/500",
+        "status_code": 500,
+        "passed": false,
+        "latency_ms": 272,
+        "ts": "2026-04-02T17:25:45.132727+00:00",
+        "error": null
+      },
+      {
+        "url": "https://httpbin.org/status/500",
+        "status_code": 500,
+        "passed": false,
+        "latency_ms": 304,
+        "ts": "2026-04-02T17:25:46.406168+00:00",
+        "error": null
+      },
+      {
+        "url": "https://httpbin.org/status/500",
+        "status_code": 500,
+        "passed": false,
+        "latency_ms": 390,
+        "ts": "2026-04-02T17:25:47.711644+00:00",
+        "error": null
+      }
+    ],
+    "passed": 0,
+    "total": 3,
+    "decision": "rejected",
+    "agentTimestamp": "2026-04-02T17:25:48.102878+00:00"
+  },
+  "settlement": {
+    "action": "refund",
+    "txHash": "0xbdb5ce99e498a90ce78ee3ca2a33ee92ff3eb3b49d080b35b8b22a17779b6ef9",
+    "bscScanUrl": "https://bscscan.com/tx/0xbdb5ce99e498a90ce78ee3ca2a33ee92ff3eb3b49d080b35b8b22a17779b6ef9"
+  },
+  "links": {
+    "fund": "https://bscscan.com/tx/0xc9dc25634b508b159979cb25fd238d4a150ab8ce8efa49e6d43c365df4d446fe",
+    "settle": "https://bscscan.com/tx/0xbdb5ce99e498a90ce78ee3ca2a33ee92ff3eb3b49d080b35b8b22a17779b6ef9",
+    "contract": "https://bscscan.com/address/0x055ad3F93Cca3B7df30a9C11AD37EBBe8b41cd4d"
+  },
+  "generatedAt": "2026-04-02T17:25:52.441Z"
+}
